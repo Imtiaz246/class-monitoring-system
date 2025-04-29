@@ -13,20 +13,22 @@
 		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
-		"dotenv": "^16.4.7",
+		"dotenv": "^16.5.0",
 		"zod": "^3.24.2",
-		"hono": "^4.7.6",
+		"hono": "^4.7.7",
 		"@hono/trpc-server": "^0.3.4",
-		"drizzle-orm": "^0.38.4",
+		"drizzle-orm": "^0.43.1",
 		"@libsql/client": "^0.14.0",
 		"better-auth": "^1.2.6",
 		"@trpc/server": "^11.0.0",
-		"@trpc/client": "^11.0.0"
+		"@trpc/client": "^11.0.0",
+		"pg": "^8.15.6",
+    	"postgres": "^3.4.5"
 	},
 	"devDependencies": {
-		"tsc-alias": "^1.8.11",
-		"typescript": "^5.8.2",
-		"@types/bun": "^1.2.6",
-		"drizzle-kit": "^0.30.5"
+		"@types/bun": "latest",
+		"@types/pg": "^8.11.14",
+		"drizzle-kit": "^0.31.0",
+		"tsx": "^4.19.3"
 	}
 }
