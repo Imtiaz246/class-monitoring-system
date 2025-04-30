@@ -5,6 +5,7 @@ CREATE TABLE "batch_students" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"batch_id" integer,
 	"section_id" integer,
+	"student_id" integer,
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now()
 );
@@ -83,6 +84,7 @@ CREATE TABLE "user" (
 --> statement-breakpoint
 ALTER TABLE "batch_students" ADD CONSTRAINT "batch_students_batch_id_batch_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."batch"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "batch_students" ADD CONSTRAINT "batch_students_section_id_section_id_fk" FOREIGN KEY ("section_id") REFERENCES "public"."section"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "batch_students" ADD CONSTRAINT "batch_students_student_id_user_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "class_session" ADD CONSTRAINT "class_session_routine_id_routine_id_fk" FOREIGN KEY ("routine_id") REFERENCES "public"."routine"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "class_session" ADD CONSTRAINT "class_session_batch_id_batch_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."batch"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "class_session" ADD CONSTRAINT "class_session_section_id_section_id_fk" FOREIGN KEY ("section_id") REFERENCES "public"."section"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

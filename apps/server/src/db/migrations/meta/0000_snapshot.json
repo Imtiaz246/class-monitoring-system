@@ -1,5 +1,5 @@
 {
-  "id": "0f90a61c-4260-47ad-be49-d4f1f9048804",
+  "id": "562c47f6-d832-413f-8220-55c4771972de",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -22,6 +22,12 @@
         },
         "section_id": {
           "name": "section_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_id": {
+          "name": "student_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -62,6 +68,19 @@
           "tableTo": "section",
           "columnsFrom": [
             "section_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "batch_students_student_id_user_id_fk": {
+          "name": "batch_students_student_id_user_id_fk",
+          "tableFrom": "batch_students",
+          "tableTo": "user",
+          "columnsFrom": [
+            "student_id"
           ],
           "columnsTo": [
             "id"
