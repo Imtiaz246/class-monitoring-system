@@ -3,6 +3,8 @@ import { Hono } from "hono";
 import { auth } from "./lib/auth";
 import { cors } from "hono/cors";
 import { authRouter } from "./routes/auth";
+import { userRouter } from "./routes/user";
+import { HTTPException } from "hono/http-exception";
 
 const app = new Hono<{
   Variables: {
@@ -23,9 +25,20 @@ app.use("*", cors(), async (ctx, next) => {
   return await next();
 });
 
-const routes = app.basePath("/api").route("/auth", authRouter);
+const routes = app
+  .basePath("/api")
+  .route("/auth", authRouter)
+  .route("/user", userRouter);
 
 app.onError((err, ctx) => {
+  if (err instanceof HTTPException) {
+    return ctx.json(
+      {
+        message: err.message,
+      },
+      err.status
+    );
+  }
   return ctx.json(
     {
       message: "Internal server error",
