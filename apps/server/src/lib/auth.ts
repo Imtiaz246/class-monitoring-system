@@ -14,10 +14,21 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: false,
+    password: {
+      hash: async (password) => {
+        return await Bun.password.hash(password, {
+          algorithm: "argon2i",
+          memoryCost: 4,
+          timeCost: 3,
+        });
+      },
+      verify: async ({ password, hash }) => {
+        return await Bun.password.verify(password, hash);
+      },
+    },
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url, token }, request) => {
       const link = new URL(url);
-      console.log("Reset url: " + link);
       await sendEmail({
         to: user.email,
         subject: "Reset your password",
