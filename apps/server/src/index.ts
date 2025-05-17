@@ -1,39 +1,50 @@
 import "dotenv/config";
-import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
+import { auth } from "./lib/auth";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
-import { appRouter } from "./routers/index";
+import { authRouter } from "./routes/auth";
+import { userRouter } from "./routes/user";
+import { HTTPException } from "hono/http-exception";
+import type { HonoContext } from "./utils/types";
 
-const app = new Hono();
+const app = new Hono<HonoContext>({ strict: false });
 
-app.use(logger());
-app.use(
-  "/*",
-  cors({
-    origin: process.env.CORS_ORIGIN || "",
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  }),
-);
-
-// app.use(
-//   "/trpc/*",
-//   trpcServer({
-//     router: appRouter,
-//     createContext: (_opts, context) => {
-//       return createContext({ context });
-//     },
-//   }),
-// );
-
-app.get("/", (c) => {
-  return c.text("OK");
+app.use("*", cors(), async (ctx, next) => {
+  const session = await auth.api.getSession({ headers: ctx.req.raw.headers });
+  if (!session || !session.user) {
+    ctx.set("user", null);
+    ctx.set("session", null);
+    return await next();
+  }
+  ctx.set("user", session.user);
+  ctx.set("session", session.session);
+  return await next();
 });
 
-app.get("/api/health", (c) => {
-  return c.text("OK");
+const routes = app
+  .basePath("/api")
+  .route("/auth", authRouter)
+  .route("/user", userRouter);
+
+app.onError((err, ctx) => {
+  if (err instanceof HTTPException) {
+    return ctx.json(
+      {
+        message: err.message,
+      },
+      err.status
+    );
+  }
+  return ctx.json(
+    {
+      message: "Internal server error",
+    },
+    500
+  );
+});
+
+app.notFound((ctx) => {
+  return ctx.text("Not found", 404);
 });
 
 export default app;
