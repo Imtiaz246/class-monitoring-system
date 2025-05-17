@@ -8,7 +8,7 @@ const styles = {
   link: "display:inline-block;margin-top:15px;padding:10px 15px;background:#007bff;color:#fff;text-decoration:none;border-radius:4px;",
 };
 
-export async function sendVerificationEmail({
+export async function sendEmail({
   to,
   subject,
   meta,

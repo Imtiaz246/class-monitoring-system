@@ -4,7 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from "@/db/schema/auth-schema";
 import { admin } from "better-auth/plugins";
 import { ac, roles } from "@/utils/permission";
-import { sendVerificationEmail } from "@/services/email/send-verification-email";
+import { sendEmail } from "@/services/email/send-email";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -15,6 +15,18 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: false,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url, token }, request) => {
+      const link = new URL(url);
+      console.log("Reset url: " + link);
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your password",
+        meta: {
+          description: "Click the button to reset your password",
+          link: link.href,
+        },
+      });
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
@@ -22,13 +34,13 @@ export const auth = betterAuth({
     autoSignInAfterVerification: false,
     sendVerificationEmail: async ({ user, url }) => {
       const link = new URL(url);
-      await sendVerificationEmail({
+      await sendEmail({
         to: user.email,
         subject: "Verify your email address",
         meta: {
           description:
             "Please verify your email address to complete the registration process.",
-          link: String(link),
+          link: link.href,
         },
       });
     },
