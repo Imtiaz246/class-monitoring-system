@@ -5,13 +5,9 @@ import { cors } from "hono/cors";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { HTTPException } from "hono/http-exception";
+import type { HonoContext } from "./utils/types";
 
-const app = new Hono<{
-  Variables: {
-    user: typeof auth.$Infer.Session.user | null;
-    session: typeof auth.$Infer.Session.session | null;
-  };
-}>({ strict: false });
+const app = new Hono<HonoContext>({ strict: false });
 
 app.use("*", cors(), async (ctx, next) => {
   const session = await auth.api.getSession({ headers: ctx.req.raw.headers });
