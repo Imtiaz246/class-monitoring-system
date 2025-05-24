@@ -1,5 +1,5 @@
 {
-  "id": "424155aa-6b43-4122-8600-bc65d32f9bda",
+  "id": "3a715f0f-cfe9-4c3d-a80d-4479a270734d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -696,7 +696,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "course_course_code_unique": {
+          "name": "course_course_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "course_code"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

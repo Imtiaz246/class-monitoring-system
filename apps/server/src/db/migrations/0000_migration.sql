@@ -92,7 +92,8 @@ CREATE TABLE "course" (
 	"name" varchar(255),
 	"course_code" varchar(63),
 	"creadit_hours" real,
-	"created_at" timestamp with time zone DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "course_course_code_unique" UNIQUE("course_code")
 );
 --> statement-breakpoint
 CREATE TABLE "room" (

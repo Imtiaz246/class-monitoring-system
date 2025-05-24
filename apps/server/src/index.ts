@@ -9,6 +9,7 @@ import type { HonoContext } from "./utils/types";
 // import { routineRouter } from "./routes/routines";
 import { batchRouter } from "./routes/batches";
 import { sectionRouter } from "./routes/sections";
+import { courseRouter } from "./routes/courses";
 
 const app = new Hono<HonoContext>({ strict: false });
 
@@ -30,7 +31,8 @@ const routes = app
   .route("/user", userRouter)
   // .route("/routines", routineRouter)
   .route("/batches", batchRouter)
-  .route("/sections", sectionRouter);
+  .route("/sections", sectionRouter)
+  .route("/courses", courseRouter);
 
 app.onError((err, ctx) => {
   if (err instanceof HTTPException) {
