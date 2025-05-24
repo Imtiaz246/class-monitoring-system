@@ -66,7 +66,8 @@ CREATE TABLE "batch_students" (
 CREATE TABLE "batch" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255),
-	"created_at" timestamp with time zone DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "batch_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
 CREATE TABLE "class_session" (

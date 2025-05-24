@@ -6,6 +6,8 @@ import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { HTTPException } from "hono/http-exception";
 import type { HonoContext } from "./utils/types";
+// import { routineRouter } from "./routes/routines";
+import { batchRouter } from "./routes/batches";
 
 const app = new Hono<HonoContext>({ strict: false });
 
@@ -24,7 +26,9 @@ app.use("*", cors(), async (ctx, next) => {
 const routes = app
   .basePath("/api")
   .route("/auth", authRouter)
-  .route("/user", userRouter);
+  .route("/user", userRouter)
+  // .route("/routines", routineRouter)
+  .route("/batches", batchRouter);
 
 app.onError((err, ctx) => {
   if (err instanceof HTTPException) {
