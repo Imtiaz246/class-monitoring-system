@@ -4,6 +4,6 @@ export const course = pgTable("course", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }),
   courseCode: varchar("course_code", { length: 63 }).unique(),
-  creditHours: real("creadit_hours"),
+  creditHours: real("credit_hours"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });

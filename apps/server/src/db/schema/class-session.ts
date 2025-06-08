@@ -21,7 +21,7 @@ export const classSession = pgTable("class_session", {
   sectionId: integer("section_id").references(() => section.id),
   courseId: integer("course_id").references(() => course.id),
   teacherId: text("teacher_id").references(() => userProfile.id),
-  roomid: integer("room_id").references(() => room.id),
+  roomId: integer("room_id").references(() => room.id),
   originalScheduledAt: timestamp("original_schedule_at", {
     withTimezone: true,
   }),

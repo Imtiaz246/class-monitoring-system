@@ -1,0 +1,7 @@
+Here is my project PRD link:
+https://hip-brand-b20.notion.site/Class-Reporting-Monitoring-System-PRD-1d2b0bc317798002b18ef7e54e08c655#1d2b0bc317798001bd22cc4706da7c5e
+
+For now I only focused on backend. I have already created some
+database schema but I am not satisfied with my code. So I want to
+change schema. You should read the PRD carefully and changes the
+code accordingly. 

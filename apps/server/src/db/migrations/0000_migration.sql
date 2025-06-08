@@ -1,6 +1,47 @@
+CREATE TYPE "public"."assignment_type" AS ENUM('homework', 'quiz', 'midterm', 'final', 'project', 'presentation', 'other');--> statement-breakpoint
 CREATE TYPE "public"."day_of_week" AS ENUM('saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday');--> statement-breakpoint
 CREATE TYPE "public"."role" AS ENUM('super_admin', 'chairman', 'admin', 'teacher', 'cr_student', 'student');--> statement-breakpoint
 CREATE TYPE "public"."session_status" AS ENUM('scheduled', 'completed', 'canceled', 're_scheduled');--> statement-breakpoint
+CREATE TABLE "assignment" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"title" varchar(255),
+	"description" text,
+	"type" "assignment_type",
+	"course_id" integer,
+	"batch_id" integer,
+	"section_id" integer,
+	"total_marks" real,
+	"due_date" timestamp with time zone,
+	"created_by" text,
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now()
+);
+--> statement-breakpoint
+CREATE TABLE "assignment_submission" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"assignment_id" integer,
+	"student_id" text,
+	"submission_link" varchar(1000),
+	"submission_text" text,
+	"submitted_at" timestamp with time zone DEFAULT now(),
+	"marks" real,
+	"feedback" text,
+	"graded_by" text,
+	"graded_at" timestamp with time zone
+);
+--> statement-breakpoint
+CREATE TABLE "attendance" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"class_session_id" integer,
+	"student_id" text,
+	"is_present" boolean DEFAULT false,
+	"remarks" varchar(255),
+	"marked_by" text,
+	"marked_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
+	"updated_by" text
+);
+--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -66,8 +107,21 @@ CREATE TABLE "batch_students" (
 CREATE TABLE "batch" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255),
+	"semester_id" integer,
 	"created_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "batch_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
+CREATE TABLE "class_content" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"class_session_id" integer,
+	"topics_covered" varchar(1000),
+	"notes" text,
+	"resources" text,
+	"created_by" text,
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
+	"updated_by" text
 );
 --> statement-breakpoint
 CREATE TABLE "class_session" (
@@ -91,7 +145,7 @@ CREATE TABLE "course" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255),
 	"course_code" varchar(63),
-	"creadit_hours" real,
+	"credit_hours" real,
 	"created_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "course_course_code_unique" UNIQUE("course_code")
 );
@@ -125,6 +179,15 @@ CREATE TABLE "section" (
 	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
+CREATE TABLE "semester" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(255),
+	"start_date" date,
+	"end_date" date,
+	"created_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "semester_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
 CREATE TABLE "user_profile" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" varchar(8),
@@ -135,11 +198,26 @@ CREATE TABLE "user_profile" (
 	CONSTRAINT "user_profile_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
+ALTER TABLE "assignment" ADD CONSTRAINT "assignment_course_id_course_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."course"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment" ADD CONSTRAINT "assignment_batch_id_batch_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."batch"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment" ADD CONSTRAINT "assignment_section_id_section_id_fk" FOREIGN KEY ("section_id") REFERENCES "public"."section"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment" ADD CONSTRAINT "assignment_created_by_user_profile_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment_submission" ADD CONSTRAINT "assignment_submission_assignment_id_assignment_id_fk" FOREIGN KEY ("assignment_id") REFERENCES "public"."assignment"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment_submission" ADD CONSTRAINT "assignment_submission_student_id_user_profile_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment_submission" ADD CONSTRAINT "assignment_submission_graded_by_user_profile_id_fk" FOREIGN KEY ("graded_by") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance" ADD CONSTRAINT "attendance_class_session_id_class_session_id_fk" FOREIGN KEY ("class_session_id") REFERENCES "public"."class_session"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance" ADD CONSTRAINT "attendance_student_id_user_profile_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance" ADD CONSTRAINT "attendance_marked_by_user_profile_id_fk" FOREIGN KEY ("marked_by") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance" ADD CONSTRAINT "attendance_updated_by_user_profile_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."user_profile"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "batch_students" ADD CONSTRAINT "batch_students_batch_id_batch_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."batch"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "batch_students" ADD CONSTRAINT "batch_students_section_id_section_id_fk" FOREIGN KEY ("section_id") REFERENCES "public"."section"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "batch_students" ADD CONSTRAINT "batch_students_student_id_user_profile_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "batch" ADD CONSTRAINT "batch_semester_id_semester_id_fk" FOREIGN KEY ("semester_id") REFERENCES "public"."semester"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_content" ADD CONSTRAINT "class_content_class_session_id_class_session_id_fk" FOREIGN KEY ("class_session_id") REFERENCES "public"."class_session"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_content" ADD CONSTRAINT "class_content_created_by_user_profile_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user_profile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_content" ADD CONSTRAINT "class_content_updated_by_user_profile_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."user_profile"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "class_session" ADD CONSTRAINT "class_session_routine_id_routine_id_fk" FOREIGN KEY ("routine_id") REFERENCES "public"."routine"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "class_session" ADD CONSTRAINT "class_session_batch_id_batch_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."batch"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "class_session" ADD CONSTRAINT "class_session_section_id_section_id_fk" FOREIGN KEY ("section_id") REFERENCES "public"."section"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
