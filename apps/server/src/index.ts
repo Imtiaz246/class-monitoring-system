@@ -6,10 +6,12 @@ import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { HTTPException } from "hono/http-exception";
 import type { HonoContext } from "./utils/types";
-// import { routineRouter } from "./routes/routines";
 import { batchRouter } from "./routes/batches";
 import { sectionRouter } from "./routes/sections";
 import { courseRouter } from "./routes/courses";
+import { classSessionRouter } from "./routes/class-sessions";
+import { attendanceRouter } from "./routes/attendance";
+import { classContentRouter } from "./routes/class-content";
 
 const app = new Hono<HonoContext>({ strict: false });
 
@@ -29,10 +31,12 @@ const routes = app
   .basePath("/api")
   .route("/auth", authRouter)
   .route("/user", userRouter)
-  // .route("/routines", routineRouter)
   .route("/batches", batchRouter)
   .route("/sections", sectionRouter)
-  .route("/courses", courseRouter);
+  .route("/courses", courseRouter)
+  .route("/class-sessions", classSessionRouter)
+  .route("/attendance", attendanceRouter)
+  .route("/class-content", classContentRouter);
 
 app.onError((err, ctx) => {
   if (err instanceof HTTPException) {
