@@ -1,54 +1,197 @@
-import { db } from "@/db";
-import { course } from "@/db/schema/course";
-import { loggedIn } from "@/middleware/logged-in";
-import { PG_ERROR } from "@/utils/pg-error";
-import type { HonoContext } from "@/utils/types";
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { db, courses, users, courseTeacher, teacherProfiles } from "../db";
+import { createCourseSchema, addTeachersToCourseSchema, uuidSchema } from "../utils/validation";
+import { requireAdmin } from "../middleware/auth";
+import { createError } from "../utils/errors";
+import type { HonoContext } from "../utils/types";
+import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-const app = new Hono<HonoContext>();
+const coursesRouter = new Hono<HonoContext>();
 
-const courseSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, { message: "Name must be non empty." })
-    .max(64, { message: "Name can't exceed 64 characters long." }),
-  courseCode: z
-    .string()
-    .trim()
-    .min(1, { message: "Course code must be non empty." })
-    .max(16, { message: "Course code can't exceed 16 characters long." }),
-  creditHours: z.number().gte(0.5).lte(10),
-});
+// POST /api/v1/courses - Create a course
+coursesRouter.post(
+  "/",
+  requireAdmin,
+  zValidator("json", createCourseSchema),
+  async (c) => {
+    const { courseCode, courseName, creditHours, semester } = c.req.valid("json");
+    const user = c.get("user")!;
 
-export const courseRouter = app.post("/", loggedIn, async (c) => {
-  const body = await c.req.json();
-  const parsedBody = courseSchema.safeParse(body);
-  if (!parsedBody.success) {
-    const errors = parsedBody.error.errors.map((el) => ({
-      path: el.path,
-      message: el.message,
-    }));
-    return c.json({ error: errors }, 400);
-  }
-  try {
-    const insertedBatch = await db
-      .insert(course)
-      .values({
-        name: parsedBody.data.name,
-        courseCode: parsedBody.data.courseCode,
-        creditHours: parsedBody.data.creditHours,
-      })
-      .returning();
-    return c.json(insertedBatch);
-  } catch (ex: any) {
-    if (ex.code === PG_ERROR.UNIQUE_VIOLATION) {
-      return c.json(
-        { message: "A course with same course code already exist." },
-        400
-      );
+    try {
+      // Check if course code already exists
+      const existingCourse = await db
+        .select()
+        .from(courses)
+        .where(eq(courses.courseCode, courseCode))
+        .limit(1);
+
+      if (existingCourse.length > 0) {
+        throw createError.conflict(
+          "Course code already exists",
+          "DUPLICATE_COURSE_CODE"
+        );
+      }
+
+      // Check if course name already exists
+      const existingCourseName = await db
+        .select()
+        .from(courses)
+        .where(eq(courses.courseName, courseName))
+        .limit(1);
+
+      if (existingCourseName.length > 0) {
+        throw createError.conflict(
+          "Course name already exists",
+          "DUPLICATE_COURSE_NAME"
+        );
+      }
+
+      const [newCourse] = await db
+        .insert(courses)
+        .values({
+          courseCode,
+          courseName,
+          creditHours,
+          semester,
+          updatedBy: user.id,
+        })
+        .returning();
+
+      return c.json({
+        data: {
+          courseCode: newCourse.courseCode,
+          courseName: newCourse.courseName,
+          creditHours: newCourse.creditHours,
+          semester: newCourse.semester,
+          updatedAt: newCourse.updatedAt,
+          updatedBy: {
+            name: user.name,
+            userId: user.id,
+            role: user.role,
+          },
+        },
+      }, 201);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("duplicate")) {
+        throw createError.conflict(
+          "Course code or name already exists",
+          "DUPLICATE_COURSE"
+        );
+      }
+      throw error;
     }
-    return c.json({ message: "An unexpected error occured" }, 500);
   }
-});
+);
+
+// GET /api/v1/courses/:id - List courses by semester
+coursesRouter.get(
+  "/:id",
+  zValidator("param", z.object({ id: z.coerce.number().int().positive() })),
+  async (c) => {
+    const semester = c.req.valid("param").id;
+
+    try {
+      const coursesWithUpdater = await db
+        .select({
+          courseCode: courses.courseCode,
+          courseName: courses.courseName,
+          creditHours: courses.creditHours,
+          semester: courses.semester,
+          updatedAt: courses.updatedAt,
+          updatedBy: {
+            name: users.name,
+            userId: users.id,
+            role: users.role,
+          },
+        })
+        .from(courses)
+        .leftJoin(users, eq(courses.updatedBy, users.id))
+        .where(eq(courses.semester, semester))
+        .orderBy(courses.courseCode);
+
+      return c.json({
+        data: coursesWithUpdater,
+      });
+    } catch (error) {
+      throw createError.internalServer("Failed to fetch courses");
+    }
+  }
+);
+
+// POST /api/v1/courses/add-teachers - Add teachers to a course
+coursesRouter.post(
+  "/add-teachers",
+  requireAdmin,
+  zValidator("json", addTeachersToCourseSchema),
+  async (c) => {
+    const { courseCode, teacherIds } = c.req.valid("json");
+    const user = c.get("user")!;
+
+    try {
+      // Check if course exists
+      const course = await db
+        .select()
+        .from(courses)
+        .where(eq(courses.courseCode, courseCode))
+        .limit(1);
+
+      if (course.length === 0) {
+        throw createError.notFound("Course not found");
+      }
+
+      // Check if all teachers exist
+      const teachers = await db
+        .select()
+        .from(teacherProfiles)
+        .where(inArray(teacherProfiles.teacherId, teacherIds));
+
+      if (teachers.length !== teacherIds.length) {
+        throw createError.notFound("One or more teachers not found");
+      }
+
+      // Check for existing assignments
+      const existingAssignments = await db
+        .select()
+        .from(courseTeacher)
+        .where(
+          and(
+            eq(courseTeacher.courseCode, courseCode),
+            inArray(courseTeacher.teacherId, teacherIds)
+          )
+        );
+
+      if (existingAssignments.length > 0) {
+        throw createError.conflict(
+          "One or more teachers are already assigned to this course",
+          "TEACHER_ALREADY_ASSIGNED"
+        );
+      }
+
+      // Create course-teacher assignments
+      const assignments = teacherIds.map(teacherId => ({
+        courseCode,
+        teacherId,
+        updatedBy: user.id,
+      }));
+
+      const newAssignments = await db
+        .insert(courseTeacher)
+        .values(assignments)
+        .returning();
+
+      return c.json({
+        data: {
+          courseCode,
+          assignedTeachers: newAssignments.length,
+          message: `Successfully assigned ${newAssignments.length} teachers to course ${courseCode}`,
+        },
+      }, 201);
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+
+export { coursesRouter };

@@ -1,67 +1,51 @@
-import { db } from "@/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import * as schema from "@/db/schema/auth-schema";
-import { admin } from "better-auth/plugins";
-import { ac, roles } from "@/utils/permission";
-import { sendEmail } from "@/services/email/send-email";
+import { db } from "../db";
+import { users, sessions, accounts, verifications } from "../db/schema";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: schema,
+    schema: {
+      user: users,
+      session: sessions,
+      account: accounts,
+      verification: verifications,
+    },
   }),
   emailAndPassword: {
     enabled: true,
-    autoSignIn: false,
-    password: {
-      hash: async (password) => {
-        return await Bun.password.hash(password, {
-          algorithm: "argon2i",
-          memoryCost: 4,
-          timeCost: 3,
-        });
-      },
-      verify: async ({ password, hash }) => {
-        return await Bun.password.verify(password, hash);
-      },
-    },
     requireEmailVerification: true,
-    sendResetPassword: async ({ user, url, token }, request) => {
-      const link = new URL(url);
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your password",
-        meta: {
-          description: "Click the button to reset your password",
-          link: link.href,
-        },
-      });
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "student",
+      },
+      gender: {
+        type: "string",
+        required: false,
+      },
+      phone: {
+        type: "string",
+        required: false,
+      },
+      address: {
+        type: "string",
+        required: false,
+      },
     },
   },
-  emailVerification: {
-    sendOnSignUp: true,
-    expiresIn: 60 * 60,
-    autoSignInAfterVerification: false,
-    sendVerificationEmail: async ({ user, url }) => {
-      const link = new URL(url);
-      await sendEmail({
-        to: user.email,
-        subject: "Verify your email address",
-        meta: {
-          description:
-            "Please verify your email address to complete the registration process.",
-          link: link.href,
-        },
-      });
-    },
+  advanced: {
+    generateId: () => crypto.randomUUID(),
   },
-  plugins: [
-    admin({
-      defaultRole: "STUDENT",
-      adminRoles: ["ADMIN", "SUPER_ADMIN", "CHAIRMAN"],
-      ac: ac,
-      roles: roles,
-    }),
-  ],
 });
+
+export type Session = typeof auth.$Infer.Session;
+export type User = Session['user'];

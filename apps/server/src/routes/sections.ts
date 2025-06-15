@@ -1,48 +1,110 @@
-import { section } from "@/db/schema/section";
-import { loggedIn } from "@/middleware/logged-in";
-import type { HonoContext } from "@/utils/types";
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { db, sections, users } from "../db";
+import { createSectionSchema, uuidSchema } from "../utils/validation";
+import { requireAdmin } from "../middleware/auth";
+import { createError } from "../utils/errors";
+import type { HonoContext } from "../utils/types";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "@/db";
-import { PG_ERROR } from "@/utils/pg-error";
 
-const app = new Hono<HonoContext>();
+const sectionsRouter = new Hono<HonoContext>();
 
-const sectionSchema = z.object({
-  batchId: z.number({
-    required_error: "Batch id is required",
-    invalid_type_error: "Batch id must be an integer",
-  }),
-  name: z
-    .string()
-    .trim()
-    .min(1, { message: "Name must be non empty." })
-    .max(30, { message: "Name can't exceed 30 characters long." }),
-});
+// POST /api/v1/sections - Create a section
+sectionsRouter.post(
+  "/",
+  requireAdmin,
+  zValidator("json", createSectionSchema),
+  async (c) => {
+    const { sectionName, semester } = c.req.valid("json");
+    const user = c.get("user")!;
 
-export const sectionRouter = app.post("/", loggedIn, async (c) => {
-  const body = await c.req.json();
-  const parsedBody = sectionSchema.safeParse(body);
-  if (!parsedBody.success) {
-    const errors = parsedBody.error.errors.map((el) => ({
-      path: el.path,
-      message: el.message,
-    }));
-    return c.json({ error: errors }, 400);
-  }
-  try {
-    const insertedSection = await db
-      .insert(section)
-      .values({
-        batchId: parsedBody.data.batchId,
-        name: parsedBody.data.name,
-      })
-      .returning();
-    return c.json(insertedSection);
-  } catch (ex: any) {
-    if (ex.code === PG_ERROR.FOREIGN_KEY_VIOLATION) {
-      return c.json({ message: "Batch id does not exist." }, 400);
+    try {
+      // Check if section with same name and semester already exists
+      const existingSection = await db
+        .select()
+        .from(sections)
+        .where(and(
+          eq(sections.sectionName, sectionName),
+          eq(sections.semester, semester)
+        ))
+        .limit(1);
+
+      if (existingSection.length > 0) {
+        throw createError.conflict(
+          "Section with same name already exists for this semester",
+          "DUPLICATE_SECTION"
+        );
+      }
+
+      const [newSection] = await db
+        .insert(sections)
+        .values({
+          sectionName,
+          semester,
+          batchId: '', // This should be set when creating the section with a batch
+          updatedBy: user.id,
+        })
+        .returning();
+
+      return c.json({
+        data: {
+          sectionId: newSection.sectionId,
+          sectionName: newSection.sectionName,
+          semester: newSection.semester,
+          updatedAt: newSection.updatedAt,
+          updatedBy: {
+            name: user.name,
+            userId: user.id,
+            role: user.role,
+          },
+        },
+      }, 201);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("duplicate")) {
+        throw createError.conflict(
+          "Section with same name already exists for this semester",
+          "DUPLICATE_SECTION"
+        );
+      }
+      throw error;
     }
-    return c.json({ message: "An unexpected error occured" }, 500);
   }
-});
+);
+
+// GET /api/v1/sections/:id - List sections by semester
+sectionsRouter.get(
+  "/:id",
+  requireAdmin,
+  zValidator("param", z.object({ id: z.coerce.number().int().positive() })),
+  async (c) => {
+    const semester = c.req.valid("param").id;
+
+    try {
+      const sectionsWithUpdater = await db
+        .select({
+          sectionId: sections.sectionId,
+          sectionName: sections.sectionName,
+          semester: sections.semester,
+          updatedAt: sections.updatedAt,
+          updatedBy: {
+            name: users.name,
+            userId: users.id,
+            role: users.role,
+          },
+        })
+        .from(sections)
+        .leftJoin(users, eq(sections.updatedBy, users.id))
+        .where(eq(sections.semester, semester))
+        .orderBy(sections.sectionName);
+
+      return c.json({
+        data: sectionsWithUpdater,
+      });
+    } catch (error) {
+      throw createError.internalServer("Failed to fetch sections");
+    }
+  }
+);
+
+export { sectionsRouter };

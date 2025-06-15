@@ -5,3 +5,35 @@ For now I only focused on backend. I have already created some
 database schema but I am not satisfied with my code. So I want to
 change schema. You should read the PRD carefully and changes the
 code accordingly. 
+
+First we modify the user schema and user routes. User schema is already
+written inside "/cd/apps/server/src/db/schema/auth-schema.ts". As 
+I used better auth for authentication so user schema is followed 
+better auth guideline. There is several users in our app e.g. super_admin,
+admin, chairman, teacher, cr_student, student. 
+
+Permission rules:
+1. super_admin: Has all types of permission 
+2. chariman: Has all types of permission except modifying the super_admin and own profile
+3. admin: Has all types of permission except modifying the super_admin, chairman and own profile
+4. teacher:
+   - can: Cancel or reschedule class session, upload/modify class content, update student attendance
+   - can not: update/create/delete any user profile and any types of operation
+5. cr_student: 
+   - can: Cancel or reschedule class session, upload/modify class content, student attendance and crete own profile
+   - can not: update/create/delete any user profile and any types of operation
+6. student: only read permission and create own profile not update own profile  
+
+Only student can create own profile. If they want to update their account they need to contact with admin, chariman or super_admin.
+Note that cr_student also a student but they have a few extra capability to manage own section. So when we create an account from 
+web portal or any frontend client a record will be added in user schema. If user is student then an extra record will be added in
+student profile schema(user need to provide batch_id, semester, section via the request body). 
+- StudentProfiles:
+  - `id` (UUID, primary key)
+  - `user_id` (UUID, foreign key to Users, unique)
+  - `student_id` (varchar, unique for all student e.g., C181060)
+  - `batch_id` (UUID, foreign key to Batches)
+  - `semester` (integer)
+  - `section` (varchar, e.g., 'A', 'B')
+
+super_admin, chairman & admin can be added teacher.

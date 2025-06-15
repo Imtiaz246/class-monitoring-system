@@ -1,62 +1,32 @@
-import "dotenv/config";
-import { Hono } from "hono";
+import app from "./routes";
 import { auth } from "./lib/auth";
-import { cors } from "hono/cors";
-import { authRouter } from "./routes/auth";
-import { userRouter } from "./routes/user";
-import { HTTPException } from "hono/http-exception";
-import type { HonoContext } from "./utils/types";
-import { batchRouter } from "./routes/batches";
-import { sectionRouter } from "./routes/sections";
-import { courseRouter } from "./routes/courses";
-import { classSessionRouter } from "./routes/class-sessions";
-import { attendanceRouter } from "./routes/attendance";
-import { classContentRouter } from "./routes/class-content";
 
-const app = new Hono<HonoContext>({ strict: false });
+// Add auth session middleware to context
+app.use("*", async (c, next) => {
+  const session = await auth.api.getSession({
+    headers: new Headers(c.req.header()),
+  });
 
-app.use("*", cors(), async (ctx, next) => {
-  const session = await auth.api.getSession({ headers: ctx.req.raw.headers });
-  if (!session || !session.user) {
-    ctx.set("user", null);
-    ctx.set("session", null);
-    return await next();
+  if (session) {
+    c.set("user", session.user);
+    c.set("session", session);
+  } else {
+    c.set("user", null);
+    c.set("session", null);
   }
-  ctx.set("user", session.user);
-  ctx.set("session", session.session);
-  return await next();
+
+  await next();
 });
 
-const routes = app
-  .basePath("/api")
-  .route("/auth", authRouter)
-  .route("/user", userRouter)
-  .route("/batches", batchRouter)
-  .route("/sections", sectionRouter)
-  .route("/courses", courseRouter)
-  .route("/class-sessions", classSessionRouter)
-  .route("/attendance", attendanceRouter)
-  .route("/class-content", classContentRouter);
+const port = Number(process.env.PORT) || 3001;
 
-app.onError((err, ctx) => {
-  if (err instanceof HTTPException) {
-    return ctx.json(
-      {
-        message: err.message,
-      },
-      err.status
-    );
-  }
-  return ctx.json(
-    {
-      message: "Internal server error",
-    },
-    500
-  );
-});
+console.log(`🚀 Server is running on port ${port}`);
+console.log(`📊 Health check: http://localhost:${port}/health`);
+console.log(`🔐 Auth endpoints: http://localhost:${port}/api/auth/*`);
+console.log(`📡 API endpoints: http://localhost:${port}/api/v1/*`);
 
-app.notFound((ctx) => {
-  return ctx.text("Not found", 404);
-});
-
-export default app;
+// Use Bun's native server
+export default {
+  port,
+  fetch: app.fetch,
+};
