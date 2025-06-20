@@ -1,13 +1,19 @@
-import type { User, Session } from "../lib/auth";
+import type { User } from "../db/schema/auth";
+
+export interface JWTSession {
+  token: string;
+  userId: string;
+  expiresAt: Date;
+}
 
 export interface HonoContext {
   Variables: {
-    user: User | null;
-    session: Session | null;
+    user: Omit<User, 'password'> | null;
+    session: JWTSession | null;
   };
 }
 
-export type UserRole = 'super_admin' | 'chairman' | 'admin' | 'cr_student' | 'teacher' | 'student';
+export type UserRole = 'super_admin' | 'chairman' | 'admin' | 'teacher' | 'cr_student' | 'student';
 
 export type Gender = 'male' | 'female' | 'other';
 

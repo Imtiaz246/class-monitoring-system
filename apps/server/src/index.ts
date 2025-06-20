@@ -1,22 +1,4 @@
 import app from "./routes";
-import { auth } from "./lib/auth";
-
-// Add auth session middleware to context
-app.use("*", async (c, next) => {
-  const session = await auth.api.getSession({
-    headers: new Headers(c.req.header()),
-  });
-
-  if (session) {
-    c.set("user", session.user);
-    c.set("session", session);
-  } else {
-    c.set("user", null);
-    c.set("session", null);
-  }
-
-  await next();
-});
 
 const port = Number(process.env.PORT) || 3001;
 

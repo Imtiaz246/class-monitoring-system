@@ -1,6 +1,6 @@
-import { pgTable, uuid, timestamp, time, text } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, time, text, integer } from "drizzle-orm/pg-core";
 import { dayOfWeekEnum, sessionStatusEnum } from "./enums";
-import { users } from "./users";
+import { users } from "./auth";
 import { sections, rooms, courseTeacher, teacherProfiles } from "./core";
 
 export const routines = pgTable("routines", {
@@ -18,7 +18,7 @@ export const routines = pgTable("routines", {
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  updatedBy: text("updated_by")
+  updatedBy: uuid("updated_by")
     .notNull()
     .references(() => users.id),
 });
@@ -34,7 +34,7 @@ export const classSessions = pgTable("class_sessions", {
   sessionStatus: sessionStatusEnum("session_status").notNull().default('scheduled'),
   rescheduleOrCancelReason: text("reschedule_or_cancel_reason"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  updatedBy: text("updated_by")
+  updatedBy: uuid("updated_by")
     .references(() => users.id),
 });
 
@@ -50,7 +50,7 @@ export const bookedRooms = pgTable("booked_rooms", {
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
   bookedAt: timestamp("booked_at").notNull().defaultNow(),
-  bookedBy: text("booked_by")
+  bookedBy: uuid("booked_by")
     .notNull()
     .references(() => users.id),
 });
@@ -67,7 +67,7 @@ export const bookedTeachers = pgTable("booked_teachers", {
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
   bookedAt: timestamp("booked_at").notNull().defaultNow(),
-  bookedBy: text("booked_by")
+  bookedBy: uuid("booked_by")
     .notNull()
     .references(() => users.id),
 });

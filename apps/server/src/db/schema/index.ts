@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { users, sessions, accounts, verifications } from "./users";
+import { users, refreshTokens, userSessions } from "./auth";
 import { 
   courses, 
   rooms, 
@@ -19,9 +19,8 @@ import {
 // Export all tables
 export {
   users,
-  sessions,
-  accounts,
-  verifications,
+  refreshTokens,
+  userSessions,
   courses,
   rooms,
   batches,
@@ -39,9 +38,11 @@ export {
 export * from "./enums";
 
 // Define relations
+// Note: Basic usersRelations, refreshTokensRelations, and userSessionsRelations are defined in auth.ts
+// Extended usersRelations with core table relations defined here to avoid circular imports
 export const usersRelations = relations(users, ({ many, one }) => ({
-  sessions: many(sessions),
-  accounts: many(accounts),
+  refreshTokens: many(refreshTokens),
+  sessions: many(userSessions),
   studentProfile: one(studentProfiles, {
     fields: [users.id],
     references: [studentProfiles.userId],
@@ -52,16 +53,16 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   }),
 }));
 
-export const sessionsRelations = relations(sessions, ({ one }) => ({
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
   user: one(users, {
-    fields: [sessions.userId],
+    fields: [refreshTokens.userId],
     references: [users.id],
   }),
 }));
 
-export const accountsRelations = relations(accounts, ({ one }) => ({
+export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   user: one(users, {
-    fields: [accounts.userId],
+    fields: [userSessions.userId],
     references: [users.id],
   }),
 }));

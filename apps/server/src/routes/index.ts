@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
-import { auth } from "../lib/auth";
+import { authenticateToken } from "../middleware/jwt-auth";
+import { authRouter } from "./auth";
+import { usersRouter } from "./users";
 import { roomsRouter } from "./rooms";
 import { coursesRouter } from "./courses";
 import { sectionsRouter } from "./sections";
@@ -23,10 +25,12 @@ app.use(
   })
 );
 
+// JWT Authentication middleware
+app.use("*", authenticateToken);
+
 // Auth routes
-app.on(["POST", "GET"], "/api/auth/**", (c) => {
-  return auth.handler(c.req.raw);
-});
+app.route("/api/auth", authRouter);
+app.route("/api/v1/users", usersRouter);
 
 // API routes
 app.route("/api/v1/rooms", roomsRouter);
@@ -46,7 +50,25 @@ app.get("/health", (c) => {
 // Global error handler
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
-    return err.getResponse();
+    // Optional: unwrap zValidator error response
+    const res = err.getResponse();
+    const contentType = res.headers.get('Content-Type');
+
+    console.log("Content type " + contentType)
+
+    if (res.status === 400 && contentType?.includes('application/json')) {
+      return res.json().then(data => {
+        return c.json({
+          error: {
+            message: data.message || "Validation failed",
+            code: "VALIDATION_ERROR",
+            details: data.errors || [],
+          },
+        }, 400);
+      });
+    }
+
+    return res;
   }
 
   console.error("Unhandled error:", err);
