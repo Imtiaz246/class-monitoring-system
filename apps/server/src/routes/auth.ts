@@ -1,59 +1,16 @@
 import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
-import { db, users, refreshTokens, userSessions, studentProfiles, teacherProfiles } from '../db';
+import { changePasswordSchema, loginSchema, registerStudentSchema, zValidator } from '../utils/validation';
+import { db, users, refreshTokens, studentProfiles } from '../db';
 import { jwtAuth } from '../lib/jwt-auth';
 import { createError } from '../utils/errors';
 import type { HonoContext } from '../utils/types';
 import { eq, and } from 'drizzle-orm';
-import { requireAuth, requireRole, requireSuperAdmin, requireChairmanOrAbove } from '../middleware/jwt-auth';
-import { roleEnum } from '../db/schema/enums';
+import { requireAuth } from '../middleware/jwt-auth';
 
 const authRouter = new Hono<HonoContext>();
 
-// Validation schemas
-const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  studentId: z.string().min(1, 'Student ID is required'),
-});
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-const createUserSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  role: z.enum(['super_admin', 'chairman', 'admin', 'teacher', 'cr_student', 'student']),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  studentId: z.string().optional(), // Required for students
-  isGuestTeacher: z.boolean().optional(), // For teachers
-});
-
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
-
-const resetPasswordSchema = z.object({
-  email: z.string().email('Invalid email format'),
-});
-
-const confirmResetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
-
 // Student registration (public endpoint)
-authRouter.post('/register/student', zValidator('json', registerSchema), async (c) => {
+authRouter.post('/register/student', zValidator('json', registerStudentSchema), async (c) => {
   const { email, password, name, gender, phone, address, studentId } = c.req.valid('json');
 
   if (!studentId) {

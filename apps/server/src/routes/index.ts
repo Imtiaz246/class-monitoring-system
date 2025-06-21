@@ -47,36 +47,47 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Global error handler
-app.onError((err, c) => {
+app.onError(async (err, c) => {
   if (err instanceof HTTPException) {
-    // Optional: unwrap zValidator error response
-    const res = err.getResponse();
-    const contentType = res.headers.get('Content-Type');
-
-    console.log("Content type " + contentType)
-
-    if (res.status === 400 && contentType?.includes('application/json')) {
-      return res.json().then(data => {
-        return c.json({
+    // Check if this is a validation error from our custom zValidator
+    if (err.cause && typeof err.cause === 'object' && 'code' in err.cause && err.cause.code === 'VALIDATION_ERROR') {
+      return c.json(
+        {
           error: {
-            message: data.message || "Validation failed",
-            code: "VALIDATION_ERROR",
-            details: data.errors || [],
+            message: err.message,
+            code: err.cause.code,
+            details: err.cause,
           },
-        }, 400);
-      });
+        },
+        err.status
+      );
     }
-
-    return res;
+    
+    // Handle other HTTPException instances
+    try {
+      const response = err.getResponse();
+      const data = await response.json();
+      return c.json(data, err.status);
+    } catch (jsonError) {
+      // Fallback if JSON parsing fails
+      return c.json(
+        {
+          error: {
+            message: err.message,
+            code: 'HTTP_EXCEPTION',
+          },
+        },
+        err.status
+      );
+    }
   }
-
-  console.error("Unhandled error:", err);
+  
+  // Handle other errors
   return c.json(
     {
       error: {
-        message: "Internal server error",
-        code: "INTERNAL_SERVER_ERROR",
+        message: 'Internal server error',
+        code: 'INTERNAL_ERROR',
       },
     },
     500

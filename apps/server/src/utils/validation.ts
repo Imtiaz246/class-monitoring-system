@@ -1,7 +1,30 @@
-import { z } from "zod";
+import { z } from 'zod';
+import { zValidator as originalZValidator } from '@hono/zod-validator';
+import { HTTPException } from 'hono/http-exception';
+import type { ValidationTargets } from 'hono';
+import type { ZodSchema } from 'zod';
 
-// Common schemas
-export const uuidSchema = z.string().uuid();
+// Custom zValidator wrapper that throws HTTPException for global error handling
+export const zValidator = <T extends ZodSchema, Target extends keyof ValidationTargets>(
+  target: Target,
+  schema: T
+) =>
+  originalZValidator(target, schema, (result, c) => {
+    if (!result.success) {
+      throw new HTTPException(400, {
+        message: 'Validation failed',
+        cause: {
+          code: 'VALIDATION_ERROR',
+          details: result.error.issues,
+        },
+      });
+    }
+  });
+
+// Common validation schemas
+export const uuidSchema = z.object({
+  id: z.string().uuid('Invalid UUID format'),
+});
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -22,6 +45,26 @@ export const roleSchema = z.enum([
 ]);
 
 export const genderSchema = z.enum(['male', 'female', 'other']);
+
+export const registerStudentSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  studentId: z.string().min(1, 'Student ID is required'),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
 
 // Room schemas
 export const createRoomSchema = z.object({
