@@ -51,10 +51,8 @@ export const studentProfiles = pgTable("student_profiles", {
     .references(() => users.id),
   semester: integer("semester").notNull(),
   batchId: uuid("batch_id")
-    .notNull()
     .references(() => batches.batchId),
   sectionId: uuid("section_id")
-    .notNull()
     .references(() => sections.sectionId),
   priority: integer("priority").notNull().default(1), // 0 = CR, 1 = normal student
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -108,8 +108,8 @@ CREATE TABLE "student_profiles" (
 	"student_id" text PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"semester" integer NOT NULL,
-	"batch_id" uuid NOT NULL,
-	"section_id" uuid NOT NULL,
+	"batch_id" uuid,
+	"section_id" uuid,
 	"priority" integer DEFAULT 1 NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"updated_by" uuid NOT NULL

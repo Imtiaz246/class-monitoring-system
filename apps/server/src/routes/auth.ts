@@ -63,8 +63,8 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
       studentId,
       userId: newUser.id,
       semester: 1, // Default semester
-      batchId: '', // Will be set by admin
-      sectionId: '', // Will be set by admin
+      batchId: null, // Will be set by admin
+      sectionId: null, // Will be set by admin
       priority: 1, // Normal student
       updatedBy: newUser.id,
     });

@@ -1,5 +1,5 @@
 {
-  "id": "cdb3fa33-bf10-4789-b52f-2df251328aa0",
+  "id": "cf3aa267-abc8-4d10-9958-51d0afdefb49",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -903,13 +903,13 @@
           "name": "batch_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "section_id": {
           "name": "section_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "priority": {
           "name": "priority",

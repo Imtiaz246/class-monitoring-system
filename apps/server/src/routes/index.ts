@@ -56,7 +56,7 @@ app.onError(async (err, c) => {
           error: {
             message: err.message,
             code: err.cause.code,
-            details: err.cause,
+            details: 'details' in err.cause ? err.cause.details : [],
           },
         },
         err.status
