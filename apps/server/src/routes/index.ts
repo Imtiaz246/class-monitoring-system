@@ -20,7 +20,7 @@ const app = new Hono<HonoContext>();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173"], // Add your frontend URLs
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173"],
     credentials: true,
   })
 );

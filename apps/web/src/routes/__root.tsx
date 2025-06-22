@@ -10,15 +10,25 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import "../index.css";
-import { HomeComponent } from ".";
 
 export interface RouterAppContext {
   trpc: typeof trpc;
   queryClient: QueryClient;
 }
 
+function RootComponent() {
+  return (
+    <>
+      <Outlet />
+      <Toaster />
+      <ReactQueryDevtools buttonPosition="top-left" />
+      <TanStackRouterDevtools position="bottom-right" />
+    </>
+  );
+}
+
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-  component: HomeComponent,
+  component: RootComponent,
   head: () => ({
     meta: [
       {

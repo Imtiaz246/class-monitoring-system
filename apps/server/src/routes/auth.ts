@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
-import { changePasswordSchema, loginSchema, registerStudentSchema, zValidator } from '../utils/validation';
+import { changePasswordSchema, loginSchema, registerStudentSchema, verifyEmailSchema, resendVerificationSchema, zValidator } from '../utils/validation';
 import { db, users, refreshTokens, studentProfiles } from '../db';
 import { jwtAuth } from '../lib/jwt-auth';
 import { createError } from '../utils/errors';
+import { sendVerificationEmail } from '../utils/email';
 import type { HonoContext } from '../utils/types';
 import { eq, and } from 'drizzle-orm';
 import { requireAuth } from '../middleware/jwt-auth';
+import crypto from 'crypto';
 
 const authRouter = new Hono<HonoContext>();
 
@@ -43,7 +45,11 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
     // Hash password
     const hashedPassword = jwtAuth.hashPassword(password);
 
-    // Create user
+    // Generate email verification token
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store studentId temporarily in a custom field for later use during verification
     const [newUser] = await db
       .insert(users)
       .values({
@@ -54,50 +60,31 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
         gender,
         phone,
         address,
-        emailVerified: false, // In production, send verification email
+        emailVerified: false,
+        emailVerificationToken: emailVerificationToken,
+        emailVerificationExpires: emailVerificationExpires,
+        // Store studentId temporarily in passwordResetToken field (we'll clear it after verification)
+        passwordResetToken: studentId,
       })
       .returning();
 
-    // Create student profile
-    await db.insert(studentProfiles).values({
-      studentId,
-      userId: newUser.id,
-      semester: 1, // Default semester
-      batchId: null, // Will be set by admin
-      sectionId: null, // Will be set by admin
-      priority: 1, // Normal student
-      updatedBy: newUser.id,
-    });
-
-    // Generate tokens
-    const accessToken = jwtAuth.generateAccessToken({
-      id: newUser.id,
-      email: newUser.email,
-      role: newUser.role,
-    });
-
-    const { token: refreshToken, tokenId } = jwtAuth.generateRefreshToken(newUser.id);
-
-    // Store refresh token
-    await db.insert(refreshTokens).values({
-      tokenId,
-      userId: newUser.id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    });
+    // Send verification email (optional for testing)
+    try {
+      await sendVerificationEmail(email, emailVerificationToken, name);
+      console.log('✅ Verification email sent successfully');
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send verification email (continuing anyway):', emailError instanceof Error ? emailError.message : String(emailError));
+      // Continue with registration even if email fails
+    }
 
     return c.json({
-      message: 'Student registered successfully',
+      message: 'Registration successful! Please check your email to verify your account before logging in.',
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
         emailVerified: newUser.emailVerified,
-      },
-      tokens: {
-        accessToken,
-        refreshToken,
       },
     }, 201);
   } catch (error) {
@@ -123,6 +110,11 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
 
     if (!user || !user.isActive) {
       throw createError.unauthorized('Invalid email or password');
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      throw createError.unauthorized('Please verify your email before logging in. Check your inbox for the verification link.');
     }
 
     // Verify password
@@ -318,6 +310,170 @@ authRouter.post('/change-password', requireAuth, zValidator('json', changePasswo
     }
     console.error('Change password error:', error);
     throw createError.internalServer('Failed to change password');
+  }
+});
+
+// Email verification endpoint
+authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c) => {
+  const { token } = c.req.valid('json');
+  console.log('🔍 Email verification request received with token:', token);
+
+  try {
+    // Find user with the verification token
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.emailVerificationToken, token),
+          eq(users.emailVerified, false)
+        )
+      )
+      .limit(1);
+
+
+    if (!user) {
+      throw createError.badRequest('Invalid or expired verification token');
+    }
+
+    // Check if token is expired
+    if (user.emailVerificationExpires && new Date() > user.emailVerificationExpires) {
+      throw createError.badRequest('Verification token has expired. Please request a new one.');
+    }
+
+    // Create student profile if user is a student
+    if (user.role === 'student') {
+      // Check if student profile already exists
+      const [existingProfile] = await db
+        .select()
+        .from(studentProfiles)
+        .where(eq(studentProfiles.userId, user.id))
+        .limit(1);
+
+      if (!existingProfile) {
+        // Get studentId from temporarily stored data
+        const studentId = user.passwordResetToken;
+        
+        if (!studentId) {
+          throw createError.badRequest('Student ID not found. Please register again.');
+        }
+
+        // Check if student ID is already taken by another verified user
+        const [existingStudent] = await db
+          .select()
+          .from(studentProfiles)
+          .where(eq(studentProfiles.studentId, studentId))
+          .limit(1);
+
+        if (existingStudent) {
+          throw createError.conflict('Student ID already exists');
+        }
+
+        // Create student profile
+        await db.insert(studentProfiles).values({
+          studentId,
+          userId: user.id,
+          semester: 1, // Default semester
+          batchId: null, // Will be set by admin
+          sectionId: null, // Will be set by admin
+          priority: 1, // Normal student
+          updatedBy: user.id,
+        });
+      }
+    }
+
+    // Update user as verified and clear verification token and temporary studentId
+
+    const updateResult = await db
+      .update(users)
+      .set({
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+        passwordResetToken: null, // Clear temporarily stored studentId
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id))
+      .returning();
+
+
+
+
+    return c.json({
+      message: 'Email verified successfully! You can now log in to your account.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        emailVerified: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('Invalid') || error.message.includes('expired'))) {
+      throw error;
+    }
+    console.error('Email verification error:', error);
+    throw createError.internalServer('Failed to verify email');
+  }
+});
+
+// Resend verification email endpoint
+authRouter.post('/resend-verification', zValidator('json', resendVerificationSchema), async (c) => {
+  const { email } = c.req.valid('json');
+
+  try {
+    // Find user by email
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return c.json({
+        message: 'If an account with this email exists and is not verified, a verification email has been sent.',
+      });
+    }
+
+    if (user.emailVerified) {
+      throw createError.badRequest('Email is already verified');
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Update user with new token
+    await db
+      .update(users)
+      .set({
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    // Send verification email (optional for testing)
+    try {
+      await sendVerificationEmail(email, verificationToken, user.name);
+      console.log('✅ Resend verification email sent successfully');
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send resend verification email (continuing anyway):', emailError instanceof Error ? emailError.message : String(emailError));
+      // Continue even if email fails
+    }
+
+    return c.json({
+      message: 'Verification email sent! Please check your inbox.',
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('already verified')) {
+      throw error;
+    }
+    console.error('Resend verification error:', error);
+    throw createError.internalServer('Failed to resend verification email');
   }
 });
 
