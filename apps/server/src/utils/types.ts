@@ -6,9 +6,20 @@ export interface JWTSession {
   expiresAt: Date;
 }
 
+type SensitiveUserFields =
+  | 'password'
+  | 'emailVerificationToken'
+  | 'emailVerificationExpires'
+  | 'passwordResetToken'
+  | 'passwordResetExpires'
+  | 'passwordChangeOtp'
+  | 'passwordChangeOtpExpires'
+  | 'passwordChangeToken'
+  | 'passwordChangeTokenExpires';
+
 export interface HonoContext {
   Variables: {
-    user: Omit<User, 'password'> | null;
+    user: Omit<User, SensitiveUserFields> | null;
     session: JWTSession | null;
   };
 }
