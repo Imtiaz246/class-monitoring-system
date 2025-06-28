@@ -132,6 +132,12 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
       .set({ lastLoginAt: new Date() })
       .where(eq(users.id, user.id));
 
+    // Revoke all existing refresh tokens for this user
+    await db
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(eq(refreshTokens.userId, user.id));
+
     // Generate tokens
     const accessToken = jwtAuth.generateAccessToken({
       id: user.id,
@@ -141,7 +147,7 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
 
     const { token: refreshToken, tokenId } = jwtAuth.generateRefreshToken(user.id);
 
-    // Store refresh token
+    // Store new refresh token
     await db.insert(refreshTokens).values({
       tokenId,
       userId: user.id,
@@ -265,7 +271,19 @@ authRouter.post('/logout', requireAuth, async (c) => {
 // Get current user profile
 authRouter.get('/me', requireAuth, async (c) => {
   const user = c.get('user')!;
-  return c.json({ user });
+  const safeUser = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    gender: user.gender,
+    phone: user.phone,
+    address: user.address,
+    lastLoginAt: user.lastLoginAt,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+  return c.json({ user: safeUser });
 });
 
 // Change password
