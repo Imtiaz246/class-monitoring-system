@@ -1,5 +1,4 @@
 import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
-import { relations } from 'drizzle-orm';
 import { roleEnum, genderEnum } from './enums';
 
 // Users table - simplified without Better Auth dependencies
@@ -17,6 +16,10 @@ export const users = pgTable('users', {
   emailVerificationExpires: timestamp('email_verification_expires'),
   passwordResetToken: text('password_reset_token'),
   passwordResetExpires: timestamp('password_reset_expires'),
+  passwordChangeOtp: text('password_change_otp'),
+  passwordChangeOtpExpires: timestamp('password_change_otp_expires'),
+  passwordChangeToken: text('password_change_token'),
+  passwordChangeTokenExpires: timestamp('password_change_token_expires'),
   isActive: boolean('is_active').notNull().default(true),
   lastLoginAt: timestamp('last_login_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),

@@ -74,6 +74,19 @@ export const resendVerificationSchema = z.object({
   email: z.string().email('Invalid email format'),
 });
 
+export const requestPasswordChangeOtpSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+});
+
+export const verifyPasswordChangeOtpSchema = z.object({
+  otp: z.string().length(6, 'OTP must be exactly 6 digits'),
+});
+
+export const changePasswordWithTokenSchema = z.object({
+  passwordChangeToken: z.string().min(1, 'Password change token is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
 // Room schemas
 export const createRoomSchema = z.object({
   roomName: z.string().min(1, "Room name is required"),

@@ -66,6 +66,49 @@ export const sendVerificationEmail = async (email: string, token: string, name: 
   }
 };
 
+// Send password change OTP email
+export const sendPasswordChangeOtp = async (email: string, otp: string, name: string) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: process.env.NODEMAILER_USER,
+      to: email,
+      subject: 'Password Change Verification Code - Class Monitoring System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #333; text-align: center;">Password Change Verification</h2>
+          <p>Hello ${name},</p>
+          <p>You have requested to change your password. Please use the verification code below to proceed:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background-color: #f8f9fa; border: 2px dashed #007bff; padding: 20px; border-radius: 10px; display: inline-block;">
+              <h1 style="color: #007bff; margin: 0; font-size: 32px; letter-spacing: 8px;">${otp}</h1>
+            </div>
+          </div>
+          
+          <p style="text-align: center; color: #666;">This verification code will expire in <strong>5 minutes</strong>.</p>
+          
+          <p style="color: #dc3545; font-size: 14px; margin-top: 30px;">
+            <strong>Security Notice:</strong> If you didn't request this password change, please ignore this email and ensure your account is secure.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            This is an automated message from Class Monitoring System. Please do not reply to this email.
+          </p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Password change OTP email sent successfully to:', email);
+  } catch (error) {
+    console.error('❌ Failed to send password change OTP email:', error);
+    throw createError.internalServer('Failed to send password change OTP email');
+  }
+};
+
 // Send password reset email
 export const sendPasswordResetEmail = async (email: string, token: string, name: string) => {
   try {

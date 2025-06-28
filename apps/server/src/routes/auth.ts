@@ -1,9 +1,18 @@
 import { Hono } from 'hono';
-import { changePasswordSchema, loginSchema, registerStudentSchema, verifyEmailSchema, resendVerificationSchema, zValidator } from '../utils/validation';
+import { 
+  loginSchema, 
+  registerStudentSchema, 
+  verifyEmailSchema, 
+  resendVerificationSchema, 
+  requestPasswordChangeOtpSchema, 
+  verifyPasswordChangeOtpSchema, 
+  changePasswordWithTokenSchema, 
+  zValidator
+} from '../utils/validation';
 import { db, users, refreshTokens, studentProfiles } from '../db';
 import { jwtAuth } from '../lib/jwt-auth';
 import { createError, AppError } from '../utils/errors';
-import { sendVerificationEmail } from '../utils/email';
+import { sendVerificationEmail, sendPasswordChangeOtp } from '../utils/email';
 import type { HonoContext } from '../utils/types';
 import { eq, and } from 'drizzle-orm';
 import { requireAuth } from '../middleware/jwt-auth';
@@ -80,7 +89,6 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
     return c.json({
       message: 'Registration successful! Please check your email to verify your account before logging in.',
       user: {
-        id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
@@ -88,12 +96,9 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
       },
     }, 201);
   } catch (error) {
-    // Re-throw known application errors (AppError instances)
     if (error instanceof AppError) {
       throw error;
     }
-    
-    // Log unexpected errors for debugging
     console.error('Unexpected registration error:', error);
     throw createError.internalServer('Failed to register user');
   }
@@ -286,10 +291,10 @@ authRouter.get('/me', requireAuth, async (c) => {
   return c.json({ user: safeUser });
 });
 
-// Change password
-authRouter.post('/change-password', requireAuth, zValidator('json', changePasswordSchema), async (c) => {
+// Request password change OTP
+authRouter.post('/request-password-change-otp', requireAuth, zValidator('json', requestPasswordChangeOtpSchema), async (c) => {
   const user = c.get('user')!;
-  const { currentPassword, newPassword } = c.req.valid('json');
+  const { currentPassword } = c.req.valid('json');
 
   try {
     // Get user with password
@@ -309,14 +314,167 @@ authRouter.post('/change-password', requireAuth, zValidator('json', changePasswo
       throw createError.unauthorized('Current password is incorrect');
     }
 
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Store OTP in database
+    await db
+      .update(users)
+      .set({
+        passwordChangeOtp: otp,
+        passwordChangeOtpExpires: otpExpires,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    // Send OTP email
+    try {
+      await sendPasswordChangeOtp(user.email, otp, user.name);
+      console.log('✅ Password change OTP sent successfully');
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send password change OTP email:', emailError instanceof Error ? emailError.message : String(emailError));
+      // Clear OTP from database if email fails
+      await db
+        .update(users)
+        .set({
+          passwordChangeOtp: null,
+          passwordChangeOtpExpires: null,
+        })
+        .where(eq(users.id, user.id));
+      throw createError.internalServer('Failed to send verification code. Please try again.');
+    }
+
+    return c.json({
+      message: 'Verification code sent to your email. Please check your inbox.',
+      expiresIn: '10 minutes'
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Unexpected request OTP error:', error);
+    throw createError.internalServer('Failed to request verification code');
+  }
+});
+
+// Verify password change OTP
+authRouter.post('/verify-password-change-otp', requireAuth, zValidator('json', verifyPasswordChangeOtpSchema), async (c) => {
+  const user = c.get('user')!;
+  const { otp } = c.req.valid('json');
+
+  try {
+    // Get user with OTP data
+    const [userWithOtp] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
+    if (!userWithOtp) {
+      throw createError.notFound('User not found');
+    }
+
+    // Check if OTP exists and is not expired
+    if (!userWithOtp.passwordChangeOtp || !userWithOtp.passwordChangeOtpExpires) {
+      throw createError.badRequest('No verification code found. Please request a new one.');
+    }
+
+    if (new Date() > userWithOtp.passwordChangeOtpExpires) {
+      // Clear expired OTP
+      await db
+        .update(users)
+        .set({
+          passwordChangeOtp: null,
+          passwordChangeOtpExpires: null,
+        })
+        .where(eq(users.id, user.id));
+      throw createError.badRequest('Verification code has expired. Please request a new one.');
+    }
+
+    // Verify OTP
+    if (userWithOtp.passwordChangeOtp !== otp) {
+      throw createError.unauthorized('Invalid verification code');
+    }
+
+    // Generate short-lived password change token (valid for 15 minutes)
+    const passwordChangeToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Store the token in database and clear OTP
+    await db
+      .update(users)
+      .set({
+        passwordChangeToken,
+        passwordChangeTokenExpires: tokenExpires,
+        passwordChangeOtp: null,
+        passwordChangeOtpExpires: null,
+      })
+      .where(eq(users.id, user.id));
+
+    return c.json({
+      message: 'Verification code verified successfully. Use the provided token to change your password.',
+      passwordChangeToken,
+      expiresAt: tokenExpires.toISOString()
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Unexpected verify OTP error:', error);
+    throw createError.internalServer('Failed to verify code');
+  }
+});
+
+// Change password with token
+authRouter.post('/change-password', requireAuth, zValidator('json', changePasswordWithTokenSchema), async (c) => {
+  const user = c.get('user')!;
+  const { passwordChangeToken, newPassword } = c.req.valid('json');
+
+  try {
+    // Get user with token data
+    const [userWithToken] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
+    if (!userWithToken) {
+      throw createError.notFound('User not found');
+    }
+
+    // Check if token exists and is not expired
+    if (!userWithToken.passwordChangeToken || !userWithToken.passwordChangeTokenExpires) {
+      throw createError.badRequest('No password change token found. Please verify your OTP first.');
+    }
+
+    if (new Date() > userWithToken.passwordChangeTokenExpires) {
+      // Clear expired token
+      await db
+        .update(users)
+        .set({
+          passwordChangeToken: null,
+          passwordChangeTokenExpires: null,
+        })
+        .where(eq(users.id, user.id));
+      throw createError.badRequest('Password change token has expired. Please verify your OTP again.');
+    }
+
+    // Verify token
+    if (userWithToken.passwordChangeToken !== passwordChangeToken) {
+      throw createError.unauthorized('Invalid password change token');
+    }
+
     // Hash new password
     const hashedNewPassword = jwtAuth.hashPassword(newPassword);
 
-    // Update password
+    // Update password and clear token
     await db
       .update(users)
-      .set({ 
+      .set({
         password: hashedNewPassword,
+        passwordChangeToken: null,
+        passwordChangeTokenExpires: null,
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
@@ -329,13 +487,10 @@ authRouter.post('/change-password', requireAuth, zValidator('json', changePasswo
 
     return c.json({ message: 'Password changed successfully' });
   } catch (error) {
-    // Re-throw known application errors (AppError instances)
     if (error instanceof AppError) {
       throw error;
     }
-    
-    // Log unexpected errors for debugging
-    console.error('Unexpected change password error:', error);
+    console.error('Unexpected change password with token error:', error);
     throw createError.internalServer('Failed to change password');
   }
 });
@@ -347,7 +502,6 @@ authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c
 
   try {
     // Find user with the verification token
-
     const [user] = await db
       .select()
       .from(users)
@@ -358,7 +512,6 @@ authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c
         )
       )
       .limit(1);
-
 
     if (!user) {
       throw createError.badRequest('Invalid or expired verification token');
@@ -411,7 +564,6 @@ authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c
     }
 
     // Update user as verified and clear verification token and temporary studentId
-
     const updateResult = await db
       .update(users)
       .set({
@@ -423,9 +575,6 @@ authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c
       })
       .where(eq(users.id, user.id))
       .returning();
-
-
-
 
     return c.json({
       message: 'Email verified successfully! You can now log in to your account.',
