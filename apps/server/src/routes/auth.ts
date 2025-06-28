@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { changePasswordSchema, loginSchema, registerStudentSchema, verifyEmailSchema, resendVerificationSchema, zValidator } from '../utils/validation';
 import { db, users, refreshTokens, studentProfiles } from '../db';
 import { jwtAuth } from '../lib/jwt-auth';
-import { createError } from '../utils/errors';
+import { createError, AppError } from '../utils/errors';
 import { sendVerificationEmail } from '../utils/email';
 import type { HonoContext } from '../utils/types';
 import { eq, and } from 'drizzle-orm';
@@ -88,10 +88,13 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
       },
     }, 201);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('already exists')) {
+    // Re-throw known application errors (AppError instances)
+    if (error instanceof AppError) {
       throw error;
     }
-    console.error('Registration error:', error);
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected registration error:', error);
     throw createError.internalServer('Failed to register user');
   }
 });
@@ -114,7 +117,7 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
 
     // Check if email is verified
     if (!user.emailVerified) {
-      throw createError.unauthorized('Please verify your email before logging in. Check your inbox for the verification link.');
+      throw createError.unauthorized('Please verify your email before logging in. Check your inbox for the verification link.', 'EMAIL_NOT_VERIFIED');
     }
 
     // Verify password
@@ -161,10 +164,10 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
       },
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Invalid')) {
+    if (error instanceof AppError) {
       throw error;
     }
-    console.error('Login error:', error);
+    console.error('Unexpected login error:', error);
     throw createError.internalServer('Failed to login');
   }
 });
@@ -222,10 +225,13 @@ authRouter.post('/refresh', async (c) => {
       accessToken,
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Invalid')) {
+    // Re-throw known application errors (AppError instances)
+    if (error instanceof AppError) {
       throw error;
     }
-    console.error('Token refresh error:', error);
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected token refresh error:', error);
     throw createError.internalServer('Failed to refresh token');
   }
 });
@@ -305,10 +311,13 @@ authRouter.post('/change-password', requireAuth, zValidator('json', changePasswo
 
     return c.json({ message: 'Password changed successfully' });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('incorrect')) {
+    // Re-throw known application errors (AppError instances)
+    if (error instanceof AppError) {
       throw error;
     }
-    console.error('Change password error:', error);
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected change password error:', error);
     throw createError.internalServer('Failed to change password');
   }
 });
@@ -411,10 +420,13 @@ authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c
       },
     });
   } catch (error) {
-    if (error instanceof Error && (error.message.includes('Invalid') || error.message.includes('expired'))) {
+    // Re-throw known application errors (AppError instances)
+    if (error instanceof AppError) {
       throw error;
     }
-    console.error('Email verification error:', error);
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected email verification error:', error);
     throw createError.internalServer('Failed to verify email');
   }
 });
@@ -469,10 +481,13 @@ authRouter.post('/resend-verification', zValidator('json', resendVerificationSch
       message: 'Verification email sent! Please check your inbox.',
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('already verified')) {
+    // Re-throw known application errors (AppError instances)
+    if (error instanceof AppError) {
       throw error;
     }
-    console.error('Resend verification error:', error);
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected resend verification error:', error);
     throw createError.internalServer('Failed to resend verification email');
   }
 });

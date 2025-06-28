@@ -7,7 +7,20 @@ export class AppError extends HTTPException {
     message: string,
     public code: string = 'UNKNOWN_ERROR'
   ) {
-    super(status, { message });
+    super(status, {
+      message,
+      res: new Response(JSON.stringify({
+        error: {
+          message,
+          code
+        }
+      }), {
+        status,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+    });
   }
 }
 
