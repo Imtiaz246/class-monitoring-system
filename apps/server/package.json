@@ -15,8 +15,11 @@
     "format": "prettier --write src/**/*.ts"
   },
   "dependencies": {
+    "@hono/swagger-ui": "^0.5.2",
+    "@hono/zod-openapi": "^0.19.9",
     "@hono/zod-validator": "^0.4.1",
     "bullmq": "^5.34.0",
+    "dotenv": "^17.0.1",
     "drizzle-orm": "^0.43.1",
     "hono": "^4.7.7",
     "jsonwebtoken": "^9.0.2",
