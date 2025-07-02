@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { authenticateToken } from "../middleware/jwt-auth";
 import { authRouter } from "./auth";
+import { authRouter as authOpenAPIRouter } from "./auth-openapi";
 import { usersRouter } from "./users";
 import { roomsRouter } from "./rooms";
 import { coursesRouter } from "./courses";
@@ -25,11 +26,21 @@ app.use(
   })
 );
 
-// JWT Authentication middleware
-app.use("*", authenticateToken);
+// Health check (public access)
+app.get("/health", (c) => {
+  return c.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
-// Auth routes
+// OpenAPI Documentation routes (before auth middleware to allow public access)
+app.route("/api/docs/auth", authOpenAPIRouter);
+
+// JWT Authentication middleware (exclude docs and health routes)
+app.use("/api/*", authenticateToken);
+
+// Auth routes (regular)
 app.route("/api/auth", authRouter);
+
+// API routes
 app.route("/api/v1/users", usersRouter);
 
 // API routes
@@ -42,10 +53,7 @@ app.route("/api/v1/teacher-profiles", teacherProfilesRouter);
 app.route("/api/v1/routines", routinesRouter);
 app.route("/api/v1/sessions", classSessionsRouter);
 
-// Health check
-app.get("/health", (c) => {
-  return c.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+
 
 app.onError(async (err, c) => {
   if (err instanceof HTTPException) {

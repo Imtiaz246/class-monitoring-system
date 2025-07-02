@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@hono/zod-openapi';
 import { zValidator as originalZValidator } from '@hono/zod-validator';
 import { HTTPException } from 'hono/http-exception';
 import type { ValidationTargets } from 'hono';
@@ -8,18 +8,17 @@ import type { ZodSchema } from 'zod';
 export const zValidator = <T extends ZodSchema, Target extends keyof ValidationTargets>(
   target: Target,
   schema: T
-) =>
-  originalZValidator(target, schema, (result, c) => {
-    if (!result.success) {
-      throw new HTTPException(400, {
-        message: 'Validation failed',
-        cause: {
-          code: 'VALIDATION_ERROR',
-          details: result.error.issues,
-        },
-      });
-    }
-  });
+) => originalZValidator(target, schema, (result, c) => {
+  if (!result.success) {
+    throw new HTTPException(400, {
+      message: 'Validation failed',
+      cause: {
+        code: 'VALIDATION_ERROR',
+        details: result.error.issues,
+      },
+    });
+  }
+});
 
 // Common validation schemas
 export const uuidSchema = z.object({
@@ -47,13 +46,34 @@ export const roleSchema = z.enum([
 export const genderSchema = z.enum(['male', 'female', 'other']);
 
 export const registerStudentSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  studentId: z.string().min(1, 'Student ID is required'),
+  email: z.string().email('Invalid email format').openapi({
+    example: 'user@example.com',
+    description: 'Student email address'
+  }),
+  password: z.string().min(8, 'Password must be at least 8 characters').openapi({
+    example: '********',
+    description: 'Password with minimum 8 characters'
+  }),
+  name: z.string().min(2, 'Name must be at least 2 characters').openapi({
+    example: 'John Doe',
+    description: 'Full name of the student'
+  }),
+  gender: z.enum(['male', 'female', 'other']).optional().openapi({
+    description: 'Optional. One of: "male", "female", or "other".',
+    example: 'male',
+  }),
+  phone: z.string().optional().openapi({
+    example: '+1234567890',
+    description: 'Phone number of the student'
+  }),
+  address: z.string().optional().openapi({
+    example: '123 University Street, College Town',
+    description: 'Home address of the student'
+  }),
+  studentId: z.string().min(1, 'Student ID is required').openapi({
+    example: 'S202400',
+    description: 'Unique student identification number'
+  }),
 });
 
 export const loginSchema = z.object({
