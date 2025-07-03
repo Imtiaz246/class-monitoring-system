@@ -9,92 +9,19 @@ import {
   changePasswordWithTokenSchema, 
   zValidator
 } from '../utils/validation';
-import { db, users, refreshTokens, studentProfiles } from '../db';
-import { jwtAuth } from '../lib/jwt-auth';
 import { createError, AppError } from '../utils/errors';
-import { sendVerificationEmail, sendPasswordChangeOtp } from '../utils/email';
 import type { HonoContext } from '../utils/types';
-import { eq, and } from 'drizzle-orm';
 import { requireAuth } from '../middleware/jwt-auth';
-import crypto from 'crypto';
+import { AuthService } from '../services/auth.service';
 
 const authRouter = new Hono<HonoContext>();
 
 // Student registration (public endpoint)
 authRouter.post('/register/student', zValidator('json', registerStudentSchema), async (c) => {
-  const { email, password, name, gender, phone, address, studentId } = c.req.valid('json');
-
-  if (!studentId) {
-    throw createError.badRequest('Student ID is required for student registration');
-  }
-
   try {
-    // Check if user already exists
-    const [existingUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (existingUser) {
-      throw createError.conflict('User with this email already exists');
-    }
-
-    // Check if student ID already exists
-    const [existingStudent] = await db
-      .select()
-      .from(studentProfiles)
-      .where(eq(studentProfiles.studentId, studentId))
-      .limit(1);
-
-    if (existingStudent) {
-      throw createError.conflict('Student ID already exists');
-    }
-
-    // Hash password
-    const hashedPassword = jwtAuth.hashPassword(password);
-
-    // Generate email verification token
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-    const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Store studentId temporarily in a custom field for later use during verification
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        email,
-        password: hashedPassword,
-        name,
-        role: 'student',
-        gender,
-        phone,
-        address,
-        emailVerified: false,
-        emailVerificationToken: emailVerificationToken,
-        emailVerificationExpires: emailVerificationExpires,
-        // Store studentId temporarily in passwordResetToken field (we'll clear it after verification)
-        passwordResetToken: studentId,
-      })
-      .returning();
-
-    // Send verification email (optional for testing)
-    try {
-      await sendVerificationEmail(email, emailVerificationToken, name);
-      console.log('✅ Verification email sent successfully');
-    } catch (emailError) {
-      console.warn('⚠️ Failed to send verification email (continuing anyway):', emailError instanceof Error ? emailError.message : String(emailError));
-      // Continue with registration even if email fails
-    }
-
-    return c.json({
-      message: 'Registration successful! Please check your email to verify your account before logging in.',
-      user: {
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        emailVerified: newUser.emailVerified,
-      },
-    }, 201);
+    const data = c.req.valid('json');
+    const result = await AuthService.registerStudent(data);
+    return c.json(result, 201);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -106,74 +33,10 @@ authRouter.post('/register/student', zValidator('json', registerStudentSchema), 
 
 // User login
 authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
-  const { email, password } = c.req.valid('json');
-
   try {
-    // Find user by email
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (!user || !user.isActive) {
-      throw createError.unauthorized('Invalid email or password');
-    }
-
-    // Check if email is verified
-    if (!user.emailVerified) {
-      throw createError.unauthorized('Please verify your email before logging in. Check your inbox for the verification link.', 'EMAIL_NOT_VERIFIED');
-    }
-
-    // Verify password
-    const isValidPassword = jwtAuth.verifyPassword(password, user.password);
-    if (!isValidPassword) {
-      throw createError.unauthorized('Invalid email or password');
-    }
-
-    // Update last login
-    await db
-      .update(users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(users.id, user.id));
-
-    // Revoke all existing refresh tokens for this user
-    await db
-      .update(refreshTokens)
-      .set({ revokedAt: new Date() })
-      .where(eq(refreshTokens.userId, user.id));
-
-    // Generate tokens
-    const accessToken = jwtAuth.generateAccessToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    const { token: refreshToken, tokenId } = jwtAuth.generateRefreshToken(user.id);
-
-    // Store new refresh token
-    await db.insert(refreshTokens).values({
-      tokenId,
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    });
-
-    return c.json({
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      },
-      tokens: {
-        accessToken,
-        refreshToken,
-      },
-    });
+    const data = c.req.valid('json');
+    const result = await AuthService.login(data);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -192,56 +55,12 @@ authRouter.post('/refresh', async (c) => {
   }
 
   try {
-    // Verify refresh token
-    const payload = jwtAuth.verifyRefreshToken(refreshToken);
-    if (!payload) {
-      throw createError.unauthorized('Invalid refresh token');
-    }
-
-    // Check if token exists in database and is not revoked
-    const [tokenRecord] = await db
-      .select()
-      .from(refreshTokens)
-      .where(
-        and(
-          eq(refreshTokens.tokenId, payload.tokenId),
-          eq(refreshTokens.userId, payload.userId)
-        )
-      )
-      .limit(1);
-
-    if (!tokenRecord || tokenRecord.revokedAt) {
-      throw createError.unauthorized('Refresh token has been revoked');
-    }
-
-    // Get user
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, payload.userId))
-      .limit(1);
-
-    if (!user || !user.isActive) {
-      throw createError.unauthorized('User not found or inactive');
-    }
-
-    // Generate new access token
-    const accessToken = jwtAuth.generateAccessToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    return c.json({
-      accessToken,
-    });
+    const result = await AuthService.refreshToken(refreshToken);
+    return c.json(result);
   } catch (error) {
-    // Re-throw known application errors (AppError instances)
     if (error instanceof AppError) {
       throw error;
     }
-    
-    // Log unexpected errors for debugging
     console.error('Unexpected token refresh error:', error);
     throw createError.internalServer('Failed to refresh token');
   }
@@ -249,106 +68,41 @@ authRouter.post('/refresh', async (c) => {
 
 // Logout
 authRouter.post('/logout', requireAuth, async (c) => {
-  const user = c.get('user')!;
-  const refreshToken = c.req.header('X-Refresh-Token');
-
   try {
-    if (refreshToken) {
-      // Revoke the refresh token
-      await db
-        .update(refreshTokens)
-        .set({ revokedAt: new Date() })
-        .where(
-          and(
-            eq(refreshTokens.userId, user.id),
-            eq(refreshTokens.token, refreshToken)
-          )
-        );
-    }
-
-    return c.json({ message: 'Logged out successfully' });
+    const user = c.get('user')!;
+    const result = await AuthService.logout(user.id);
+    return c.json(result);
   } catch (error) {
-    console.error('Logout error:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Unexpected logout error:', error);
     throw createError.internalServer('Failed to logout');
   }
 });
 
 // Get current user profile
 authRouter.get('/me', requireAuth, async (c) => {
-  const user = c.get('user')!;
-  const safeUser = {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    gender: user.gender,
-    phone: user.phone,
-    address: user.address,
-    lastLoginAt: user.lastLoginAt,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
-  return c.json({ user: safeUser });
+  try {
+    const user = c.get('user')!;
+    const result = await AuthService.getCurrentUser(user.id);
+    return c.json(result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Get user error:', error);
+    throw createError.internalServer('Failed to get user profile');
+  }
 });
 
 // Request password change OTP
 authRouter.post('/request-password-change-otp', requireAuth, zValidator('json', requestPasswordChangeOtpSchema), async (c) => {
-  const user = c.get('user')!;
-  const { currentPassword } = c.req.valid('json');
-
   try {
-    // Get user with password
-    const [userWithPassword] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
-
-    if (!userWithPassword) {
-      throw createError.notFound('User not found');
-    }
-
-    // Verify current password
-    const isValidPassword = jwtAuth.verifyPassword(currentPassword, userWithPassword.password);
-    if (!isValidPassword) {
-      throw createError.unauthorized('Current password is incorrect');
-    }
-
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    // Store OTP in database
-    await db
-      .update(users)
-      .set({
-        passwordChangeOtp: otp,
-        passwordChangeOtpExpires: otpExpires,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
-
-    // Send OTP email
-    try {
-      await sendPasswordChangeOtp(user.email, otp, user.name);
-      console.log('✅ Password change OTP sent successfully');
-    } catch (emailError) {
-      console.warn('⚠️ Failed to send password change OTP email:', emailError instanceof Error ? emailError.message : String(emailError));
-      // Clear OTP from database if email fails
-      await db
-        .update(users)
-        .set({
-          passwordChangeOtp: null,
-          passwordChangeOtpExpires: null,
-        })
-        .where(eq(users.id, user.id));
-      throw createError.internalServer('Failed to send verification code. Please try again.');
-    }
-
-    return c.json({
-      message: 'Verification code sent to your email. Please check your inbox.',
-      expiresIn: '10 minutes'
-    });
+    const user = c.get('user')!;
+    const data = c.req.valid('json');
+    const result = await AuthService.requestPasswordChangeOtp(user.id, data.currentPassword);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -360,300 +114,61 @@ authRouter.post('/request-password-change-otp', requireAuth, zValidator('json', 
 
 // Verify password change OTP
 authRouter.post('/verify-password-change-otp', requireAuth, zValidator('json', verifyPasswordChangeOtpSchema), async (c) => {
-  const user = c.get('user')!;
-  const { otp } = c.req.valid('json');
-
   try {
-    // Get user with OTP data
-    const [userWithOtp] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
-
-    if (!userWithOtp) {
-      throw createError.notFound('User not found');
-    }
-
-    // Check if OTP exists and is not expired
-    if (!userWithOtp.passwordChangeOtp || !userWithOtp.passwordChangeOtpExpires) {
-      throw createError.badRequest('No verification code found. Please request a new one.');
-    }
-
-    if (new Date() > userWithOtp.passwordChangeOtpExpires) {
-      // Clear expired OTP
-      await db
-        .update(users)
-        .set({
-          passwordChangeOtp: null,
-          passwordChangeOtpExpires: null,
-        })
-        .where(eq(users.id, user.id));
-      throw createError.badRequest('Verification code has expired. Please request a new one.');
-    }
-
-    // Verify OTP
-    if (userWithOtp.passwordChangeOtp !== otp) {
-      throw createError.unauthorized('Invalid verification code');
-    }
-
-    // Generate short-lived password change token (valid for 15 minutes)
-    const passwordChangeToken = crypto.randomBytes(32).toString('hex');
-    const tokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-    // Store the token in database and clear OTP
-    await db
-      .update(users)
-      .set({
-        passwordChangeToken,
-        passwordChangeTokenExpires: tokenExpires,
-        passwordChangeOtp: null,
-        passwordChangeOtpExpires: null,
-      })
-      .where(eq(users.id, user.id));
-
-    return c.json({
-      message: 'Verification code verified successfully. Use the provided token to change your password.',
-      passwordChangeToken,
-      expiresAt: tokenExpires.toISOString()
-    });
+    const user = c.get('user')!;
+    const data = c.req.valid('json');
+    const result = await AuthService.verifyPasswordChangeOtp(user.id, data.otp);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
     }
-    console.error('Unexpected verify OTP error:', error);
+    console.error('Unexpected OTP verification error:', error);
     throw createError.internalServer('Failed to verify code');
   }
 });
 
 // Change password with token
 authRouter.post('/change-password', requireAuth, zValidator('json', changePasswordWithTokenSchema), async (c) => {
-  const user = c.get('user')!;
-  const { passwordChangeToken, newPassword } = c.req.valid('json');
-
   try {
-    // Get user with token data
-    const [userWithToken] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
-
-    if (!userWithToken) {
-      throw createError.notFound('User not found');
-    }
-
-    // Check if token exists and is not expired
-    if (!userWithToken.passwordChangeToken || !userWithToken.passwordChangeTokenExpires) {
-      throw createError.badRequest('No password change token found. Please verify your OTP first.');
-    }
-
-    if (new Date() > userWithToken.passwordChangeTokenExpires) {
-      // Clear expired token
-      await db
-        .update(users)
-        .set({
-          passwordChangeToken: null,
-          passwordChangeTokenExpires: null,
-        })
-        .where(eq(users.id, user.id));
-      throw createError.badRequest('Password change token has expired. Please verify your OTP again.');
-    }
-
-    // Verify token
-    if (userWithToken.passwordChangeToken !== passwordChangeToken) {
-      throw createError.unauthorized('Invalid password change token');
-    }
-
-    // Hash new password
-    const hashedNewPassword = jwtAuth.hashPassword(newPassword);
-
-    // Update password and clear token
-    await db
-      .update(users)
-      .set({
-        password: hashedNewPassword,
-        passwordChangeToken: null,
-        passwordChangeTokenExpires: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
-
-    // Revoke all refresh tokens for this user
-    await db
-      .update(refreshTokens)
-      .set({ revokedAt: new Date() })
-      .where(eq(refreshTokens.userId, user.id));
-
-    return c.json({ message: 'Password changed successfully' });
+    const user = c.get('user')!;
+    const data = c.req.valid('json');
+    const result = await AuthService.changePasswordWithToken(user.id, data.passwordChangeToken, data.newPassword);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
     }
-    console.error('Unexpected change password with token error:', error);
+    console.error('Unexpected change password error:', error);
     throw createError.internalServer('Failed to change password');
   }
 });
 
-// Email verification endpoint
+// Email verification
 authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), async (c) => {
-  const { token } = c.req.valid('json');
-  console.log('🔍 Email verification request received with token:', token);
-
   try {
-    // Find user with the verification token
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.emailVerificationToken, token),
-          eq(users.emailVerified, false)
-        )
-      )
-      .limit(1);
-
-    if (!user) {
-      throw createError.badRequest('Invalid or expired verification token');
-    }
-
-    // Check if token is expired
-    if (user.emailVerificationExpires && new Date() > user.emailVerificationExpires) {
-      throw createError.badRequest('Verification token has expired. Please request a new one.');
-    }
-
-    // Create student profile if user is a student
-    if (user.role === 'student') {
-      // Check if student profile already exists
-      const [existingProfile] = await db
-        .select()
-        .from(studentProfiles)
-        .where(eq(studentProfiles.userId, user.id))
-        .limit(1);
-
-      if (!existingProfile) {
-        // Get studentId from temporarily stored data
-        const studentId = user.passwordResetToken;
-        
-        if (!studentId) {
-          throw createError.badRequest('Student ID not found. Please register again.');
-        }
-
-        // Check if student ID is already taken by another verified user
-        const [existingStudent] = await db
-          .select()
-          .from(studentProfiles)
-          .where(eq(studentProfiles.studentId, studentId))
-          .limit(1);
-
-        if (existingStudent) {
-          throw createError.conflict('Student ID already exists');
-        }
-
-        // Create student profile
-        await db.insert(studentProfiles).values({
-          studentId,
-          userId: user.id,
-          semester: 1, // Default semester
-          batchId: null, // Will be set by admin
-          sectionId: null, // Will be set by admin
-          priority: 1, // Normal student
-          updatedBy: user.id,
-        });
-      }
-    }
-
-    // Update user as verified and clear verification token and temporary studentId
-    const updateResult = await db
-      .update(users)
-      .set({
-        emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpires: null,
-        passwordResetToken: null, // Clear temporarily stored studentId
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id))
-      .returning();
-
-    return c.json({
-      message: 'Email verified successfully! You can now log in to your account.',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        emailVerified: true,
-      },
-    });
+    const data = c.req.valid('json');
+    const result = await AuthService.verifyEmail(data.token);
+    return c.json(result);
   } catch (error) {
-    // Re-throw known application errors (AppError instances)
     if (error instanceof AppError) {
       throw error;
     }
-    
-    // Log unexpected errors for debugging
     console.error('Unexpected email verification error:', error);
     throw createError.internalServer('Failed to verify email');
   }
 });
 
-// Resend verification email endpoint
+// Resend verification email
 authRouter.post('/resend-verification', zValidator('json', resendVerificationSchema), async (c) => {
-  const { email } = c.req.valid('json');
-
   try {
-    // Find user by email
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (!user) {
-      // Don't reveal if email exists or not for security
-      return c.json({
-        message: 'If an account with this email exists and is not verified, a verification email has been sent.',
-      });
-    }
-
-    if (user.emailVerified) {
-      throw createError.badRequest('Email is already verified');
-    }
-
-    // Generate new verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Update user with new token
-    await db
-      .update(users)
-      .set({
-        emailVerificationToken: verificationToken,
-        emailVerificationExpires: verificationExpires,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
-
-    // Send verification email (optional for testing)
-    try {
-      await sendVerificationEmail(email, verificationToken, user.name);
-      console.log('✅ Resend verification email sent successfully');
-    } catch (emailError) {
-      console.warn('⚠️ Failed to send resend verification email (continuing anyway):', emailError instanceof Error ? emailError.message : String(emailError));
-      // Continue even if email fails
-    }
-
-    return c.json({
-      message: 'Verification email sent! Please check your inbox.',
-    });
+    const data = c.req.valid('json');
+    const result = await AuthService.resendVerification(data.email);
+    return c.json(result);
   } catch (error) {
-    // Re-throw known application errors (AppError instances)
     if (error instanceof AppError) {
       throw error;
     }
-    
-    // Log unexpected errors for debugging
     console.error('Unexpected resend verification error:', error);
     throw createError.internalServer('Failed to resend verification email');
   }
