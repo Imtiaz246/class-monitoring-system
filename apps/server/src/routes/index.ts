@@ -31,11 +31,11 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// OpenAPI Documentation routes (before auth middleware to allow public access)
-app.route("/api/docs/auth", authOpenAPIRouter);
-
 // JWT Authentication middleware (exclude docs and health routes)
 app.use("/api/*", authenticateToken);
+
+// OpenAPI Documentation routes
+app.route("/api/docs/auth", authOpenAPIRouter);
 
 // Auth routes (regular)
 app.route("/api/auth", authRouter);
@@ -53,49 +53,25 @@ app.route("/api/v1/teacher-profiles", teacherProfilesRouter);
 app.route("/api/v1/routines", routinesRouter);
 app.route("/api/v1/sessions", classSessionsRouter);
 
-
-
 app.onError(async (err, c) => {
   if (err instanceof HTTPException) {
-    // Check if this is a validation error from our custom zValidator
-    if (err.cause && typeof err.cause === 'object' && 'code' in err.cause && err.cause.code === 'VALIDATION_ERROR') {
-      return c.json(
-        {
-          error: {
-            message: err.message,
-            code: err.cause.code,
-            details: 'details' in err.cause ? err.cause.details : [],
-          },
+    const { code, details } = err.cause as { code: string; details?: unknown };
+    return c.json(
+      {
+        error: {
+          message: err.message,
+          details: details ?? []
         },
-        err.status
-      );
-    }
-    
-    // Handle other HTTPException instances
-    try {
-      const response = err.getResponse();
-      const data = await response.json();
-      return c.json(data, err.status);
-    } catch (jsonError) {
-      // Fallback if JSON parsing fails
-      return c.json(
-        {
-          error: {
-            message: err.message,
-            code: 'HTTP_EXCEPTION',
-          },
-        },
-        err.status
-      );
-    }
+      },
+      err.status
+    );
   }
   
   // Handle other errors
   return c.json(
     {
       error: {
-        message: 'Internal server error',
-        code: 'INTERNAL_ERROR',
+        message: 'Internal server error'
       },
     },
     500

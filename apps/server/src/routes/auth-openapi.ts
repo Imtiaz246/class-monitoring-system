@@ -10,14 +10,12 @@ import {
 } from '../utils/validation';
 import { createError, AppError } from '../utils/errors';
 import { AuthService } from '../services/auth.service';
-import { db, users } from '../db';
-import { jwtAuth } from '../lib/jwt-auth';
-import { eq } from 'drizzle-orm';
 import { 
   createOpenAPIApp, 
   SuccessResponseSchema, 
   // commonErrorResponses 
 } from '../lib/swagger';
+import { requireAuth } from '../middleware/jwt-auth';
 
 // Create OpenAPI app instance
 const authRouter = createOpenAPIApp();
@@ -183,6 +181,7 @@ const logoutRoute = createRoute({
   summary: 'User logout',
   description: 'Logout user and revoke refresh token.',
   security: [{ Bearer: [] }],
+  middleware: requireAuth,
   request: {
     headers: z.object({
       'X-Refresh-Token': z.string().optional().describe('Refresh token to revoke'),
@@ -202,28 +201,15 @@ const logoutRoute = createRoute({
 });
 
 authRouter.openapi(logoutRoute, async (c) => {
-  // Manual auth check since middleware doesn't work with OpenAPI
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError.unauthorized('Authorization header required');
-  }
-  
-  const token = authHeader.substring(7);
-  const payload = jwtAuth.verifyAccessToken(token);
-  if (!payload) {
-    throw createError.unauthorized('Invalid token');
-  }
-  
-  const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-  if (!user || !user.isActive) {
-    throw createError.unauthorized('User not found or inactive');
-  }
-
   try {
+    const user = c.get('user')!;
     const result = await AuthService.logout(user.id);
-    return c.json(result, 200);
+    return c.json(result);
   } catch (error) {
-    console.error('Logout error:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Unexpected logout error:', error);
     throw createError.internalServer('Failed to logout');
   }
 });
@@ -236,6 +222,7 @@ const getCurrentUserRoute = createRoute({
   summary: 'Get current user profile',
   description: 'Get the profile information of the currently authenticated user.',
   security: [{ Bearer: [] }],
+  middleware: requireAuth,
   responses: {
     200: {
       description: 'User profile retrieved successfully',
@@ -263,31 +250,15 @@ const getCurrentUserRoute = createRoute({
 });
 
 authRouter.openapi(getCurrentUserRoute, async (c) => {
-  // Manual auth check since middleware doesn't work with OpenAPI
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError.unauthorized('Authorization header required');
-  }
-  
-  const token = authHeader.substring(7);
-  const payload = jwtAuth.verifyAccessToken(token);
-  if (!payload) {
-    throw createError.unauthorized('Invalid token');
-  }
-  
-  const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-  if (!user || !user.isActive) {
-    throw createError.unauthorized('User not found or inactive');
-  }
-
   try {
+    const user = c.get('user')!;
     const result = await AuthService.getCurrentUser(user.id);
-    return c.json(result, 200);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
     }
-    console.error('Get user error:', error);
+    console.error('Unexpected get user error:', error);
     throw createError.internalServer('Failed to get user profile');
   }
 });
@@ -300,6 +271,7 @@ const requestPasswordChangeOtpRoute = createRoute({
   summary: 'Request password change OTP',
   description: 'Request a one-time password (OTP) to change password. Requires current password verification.',
   security: [{ Bearer: [] }],
+  middleware: requireAuth,
   request: {
     body: {
       content: {
@@ -326,27 +298,11 @@ const requestPasswordChangeOtpRoute = createRoute({
 });
 
 authRouter.openapi(requestPasswordChangeOtpRoute, async (c) => {
-  // Manual auth check since middleware doesn't work with OpenAPI
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError.unauthorized('Authorization header required');
-  }
-  
-  const token = authHeader.substring(7);
-  const payload = jwtAuth.verifyAccessToken(token);
-  if (!payload) {
-    throw createError.unauthorized('Invalid token');
-  }
-  
-  const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-  if (!user || !user.isActive) {
-    throw createError.unauthorized('User not found or inactive');
-  }
-
   try {
+    const user = c.get('user')!;
     const data = c.req.valid('json');
     const result = await AuthService.requestPasswordChangeOtp(user.id, data.currentPassword);
-    return c.json(result, 200);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -364,6 +320,7 @@ const verifyPasswordChangeOtpRoute = createRoute({
   summary: 'Verify password change OTP',
   description: 'Verify the OTP and receive a short-lived token for password change.',
   security: [{ Bearer: [] }],
+  middleware: requireAuth,
   request: {
     body: {
       content: {
@@ -391,27 +348,11 @@ const verifyPasswordChangeOtpRoute = createRoute({
 });
 
 authRouter.openapi(verifyPasswordChangeOtpRoute, async (c) => {
-  // Manual auth check since middleware doesn't work with OpenAPI
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError.unauthorized('Authorization header required');
-  }
-  
-  const token = authHeader.substring(7);
-  const payload = jwtAuth.verifyAccessToken(token);
-  if (!payload) {
-    throw createError.unauthorized('Invalid token');
-  }
-  
-  const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-  if (!user || !user.isActive) {
-    throw createError.unauthorized('User not found or inactive');
-  }
-
   try {
+    const user = c.get('user')!;
     const data = c.req.valid('json');
     const result = await AuthService.verifyPasswordChangeOtp(user.id, data.otp);
-    return c.json(result, 200);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -429,6 +370,7 @@ const changePasswordWithTokenRoute = createRoute({
   summary: 'Change password with token',
   description: 'Change password using the token received from OTP verification.',
   security: [{ Bearer: [] }],
+  middleware: requireAuth,
   request: {
     body: {
       content: {
@@ -452,27 +394,11 @@ const changePasswordWithTokenRoute = createRoute({
 });
 
 authRouter.openapi(changePasswordWithTokenRoute, async (c) => {
-  // Manual auth check since middleware doesn't work with OpenAPI
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError.unauthorized('Authorization header required');
-  }
-  
-  const token = authHeader.substring(7);
-  const payload = jwtAuth.verifyAccessToken(token);
-  if (!payload) {
-    throw createError.unauthorized('Invalid token');
-  }
-  
-  const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-  if (!user || !user.isActive) {
-    throw createError.unauthorized('User not found or inactive');
-  }
-
   try {
+    const user = c.get('user')!;
     const data = c.req.valid('json');
     const result = await AuthService.changePasswordWithToken(user.id, data.passwordChangeToken, data.newPassword);
-    return c.json(result, 200);
+    return c.json(result);
   } catch (error) {
     if (error instanceof AppError) {
       throw error;

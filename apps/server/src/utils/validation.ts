@@ -1,22 +1,16 @@
 import { z } from '@hono/zod-openapi';
 import { zValidator as originalZValidator } from '@hono/zod-validator';
-import { HTTPException } from 'hono/http-exception';
 import type { ValidationTargets } from 'hono';
-import type { ZodSchema } from 'zod';
+import type { ZodIssue, ZodSchema } from 'zod';
+import { createError } from './errors';
 
 // Custom zValidator wrapper that throws HTTPException for global error handling
 export const zValidator = <T extends ZodSchema, Target extends keyof ValidationTargets>(
   target: Target,
   schema: T
-) => originalZValidator(target, schema, (result, c) => {
+) => originalZValidator(target, schema, (result) => {
   if (!result.success) {
-    throw new HTTPException(400, {
-      message: 'Validation failed',
-      cause: {
-        code: 'VALIDATION_ERROR',
-        details: result.error.issues,
-      },
-    });
+    throw createError.validationFailed<ZodIssue[]>('Validation failed', result.error.issues);
   }
 });
 
@@ -24,6 +18,7 @@ export const zValidator = <T extends ZodSchema, Target extends keyof ValidationT
 export const uuidSchema = z.object({
   id: z.string().uuid('Invalid UUID format'),
 });
+
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
