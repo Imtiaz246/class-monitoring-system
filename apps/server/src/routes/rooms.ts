@@ -30,10 +30,7 @@ roomsRouter.post(
         .limit(1);
 
       if (existingRoom.length > 0) {
-        throw createError.conflict(
-          "Room with same name and location already exists",
-          "DUPLICATE_ROOM"
-        );
+        throw createError.conflict("Room with same name and location already exists");
       }
 
       const [newRoom] = await db
@@ -60,10 +57,7 @@ roomsRouter.post(
       }, 201);
     } catch (error) {
       if (error instanceof Error && error.message.includes("duplicate")) {
-        throw createError.conflict(
-          "Room with same name and location already exists",
-          "DUPLICATE_ROOM"
-        );
+        throw createError.conflict("Room with same name and location already exists");
       }
       throw error;
     }

@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db, batches, users } from "../db";
-import { createBatchSchema, updateBatchSchema, getBatchesSchema, uuidSchema } from "../utils/validation";
+import { createBatchSchema, updateBatchSchema, getBatchesSchema, uuidParamSchema } from "../utils/validation";
 import { requireAdmin } from "../middleware/auth";
 import { createError } from "../utils/errors";
 import type { HonoContext } from "../utils/types";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 
 const batchesRouter = new Hono<HonoContext>();
 
@@ -28,10 +27,7 @@ batchesRouter.post(
         .limit(1);
 
       if (existingBatch.length > 0) {
-        throw createError.conflict(
-          "Batch name already exists",
-          "DUPLICATE_BATCH_NAME"
-        );
+        throw createError.conflict("Batch name already exists");
       }
 
       const [newBatch] = await db
@@ -56,10 +52,7 @@ batchesRouter.post(
       }, 201);
     } catch (error) {
       if (error instanceof Error && error.message.includes("duplicate")) {
-        throw createError.conflict(
-          "Batch name already exists",
-          "DUPLICATE_BATCH_NAME"
-        );
+        throw createError.conflict("Batch name already exists");
       }
       throw error;
     }
@@ -106,7 +99,7 @@ batchesRouter.get(
 batchesRouter.put(
   "/:id",
   requireAdmin,
-  zValidator("param", z.object({ id: uuidSchema })),
+  zValidator("param", uuidParamSchema),
   zValidator("json", updateBatchSchema),
   async (c) => {
     const { id: batchId } = c.req.valid("param");
@@ -133,10 +126,7 @@ batchesRouter.put(
         .limit(1);
 
       if (duplicateBatch.length > 0 && duplicateBatch[0].batchId !== batchId) {
-        throw createError.conflict(
-          "Batch name already exists",
-          "DUPLICATE_BATCH_NAME"
-        );
+        throw createError.conflict("Batch name already exists");
       }
 
       const [updatedBatch] = await db

@@ -15,7 +15,9 @@ export const zValidator = <T extends ZodSchema, Target extends keyof ValidationT
 });
 
 // Common validation schemas
-export const uuidSchema = z.object({
+export const uuidSchema = z.string().uuid('Invalid UUID format');
+
+export const uuidParamSchema = z.object({
   id: z.string().uuid('Invalid UUID format'),
 });
 

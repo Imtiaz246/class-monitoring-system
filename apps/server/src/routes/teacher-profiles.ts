@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db, teacherProfiles, users } from "../db";
-import { updateTeacherProfileSchema, uuidSchema } from "../utils/validation";
+import { updateTeacherProfileSchema } from "../utils/validation";
 import { requireSelfOrAdmin } from "../middleware/auth";
 import { createError } from "../utils/errors";
 import type { HonoContext } from "../utils/types";

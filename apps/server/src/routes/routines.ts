@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db, routines, sections, courses, rooms, teacherProfiles, users, courseTeacher, classSessions, bookedRooms, bookedTeachers } from "../db";
-import { createRoutineSchema, getRoutinesSchema, updateRoutineSchema, uuidSchema } from "../utils/validation";
+import { createRoutineSchema, getRoutinesSchema, updateRoutineSchema, uuidParamSchema } from "../utils/validation";
 import { requireAdmin, requireTeacherOrAdmin } from "../middleware/auth";
 import { createError } from "../utils/errors";
 import type { HonoContext } from "../utils/types";
-import { eq, and, or, gte, lte } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const routinesRouter = new Hono<HonoContext>();
@@ -66,10 +66,7 @@ routinesRouter.post(
         .limit(1);
 
       if (teacherAssignment.length === 0) {
-        throw createError.badRequest(
-          "Teacher is not assigned to this course",
-          "TEACHER_NOT_ASSIGNED"
-        );
+        throw createError.badRequest("Teacher is not assigned to this course");
       }
 
       // Check for conflicts in the same section (same day and overlapping time)
@@ -84,10 +81,7 @@ routinesRouter.post(
         );
 
       if (conflictingRoutines.length > 0) {
-        throw createError.conflict(
-          "Time slot conflicts with existing routine for this section",
-          "ROUTINE_TIME_CONFLICT"
-        );
+        throw createError.conflict("Time slot conflicts with existing routine for this section");
       }
 
       // Check for room conflicts (same day, room)
@@ -102,10 +96,7 @@ routinesRouter.post(
         );
 
       if (roomConflicts.length > 0) {
-        throw createError.conflict(
-          "Room is already booked for this time slot",
-          "ROOM_CONFLICT"
-        );
+        throw createError.conflict("Room is already booked for this time slot");
       }
 
       // Find the courseTeacherId
@@ -121,10 +112,7 @@ routinesRouter.post(
         .limit(1);
 
       if (courseTeacherRecord.length === 0) {
-        throw createError.badRequest(
-          "Teacher is not assigned to this course",
-          "TEACHER_NOT_ASSIGNED"
-        );
+        throw createError.badRequest("Teacher is not assigned to this course");
       }
 
       const courseTeacherId = courseTeacherRecord[0].courseTeacherId;
@@ -142,10 +130,7 @@ routinesRouter.post(
         );
 
       if (teacherConflicts.length > 0) {
-        throw createError.conflict(
-          "Teacher is already assigned to another class at this time",
-          "TEACHER_CONFLICT"
-        );
+        throw createError.conflict("Teacher is already assigned to another class at this time");
       }
 
       const [newRoutine] = await db
@@ -241,7 +226,7 @@ routinesRouter.get(
 routinesRouter.put(
   "/:id",
   requireAdmin,
-  zValidator("param", z.object({ id: uuidSchema })),
+  zValidator("param", uuidParamSchema),
   zValidator("json", updateRoutineSchema),
   async (c) => {
     const { id: routineId } = c.req.valid("param");
@@ -322,10 +307,7 @@ routinesRouter.put(
             .limit(1);
 
           if (teacherAssignment.length === 0) {
-            throw createError.badRequest(
-              "Teacher is not assigned to this course",
-              "TEACHER_NOT_ASSIGNED"
-            );
+            throw createError.badRequest("Teacher is not assigned to this course");
           }
         }
       }

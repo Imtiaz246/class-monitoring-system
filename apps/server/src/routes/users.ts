@@ -5,13 +5,12 @@ import { db, users, studentProfiles, teacherProfiles, batches, sections } from '
 import { jwtAuth } from '../lib/jwt-auth';
 import { createError } from '../utils/errors';
 import type { HonoContext } from '../utils/types';
-import { eq, and, or } from 'drizzle-orm';
+import { uuidParamSchema } from '../utils/validation';
+import { eq, and } from 'drizzle-orm';
 import { 
   requireAuth, 
-  requireSuperAdmin, 
-  requireChairmanOrAbove, 
-  requireAdmin,
-  requireUserModificationPermission 
+  requireSuperAdmin,
+  requireAdmin
 } from '../middleware/jwt-auth';
 
 const usersRouter = new Hono<HonoContext>();
@@ -65,9 +64,7 @@ const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-const uuidSchema = z.object({
-  id: z.string().uuid('Invalid user ID'),
-});
+
 
 // Create Super Admin (requires developer key)
 usersRouter.post('/create-super-admin', zValidator('json', createSuperAdminSchema), async (c) => {
@@ -395,7 +392,7 @@ usersRouter.get('/', requireSuperAdmin, async (c) => {
 });
 
 // Get user by ID
-usersRouter.get('/:id', requireAuth, zValidator('param', uuidSchema), async (c) => {
+usersRouter.get('/:id', requireAuth, zValidator('param', uuidParamSchema), async (c) => {
   const { id } = c.req.valid('param');
   const currentUser = c.get('user')!;
 
@@ -442,7 +439,7 @@ usersRouter.get('/:id', requireAuth, zValidator('param', uuidSchema), async (c) 
 });
 
 // Update user
-usersRouter.put('/:id', requireAuth, zValidator('param', uuidSchema), zValidator('json', updateUserSchema), async (c) => {
+usersRouter.put('/:id', requireAuth, zValidator('param', uuidParamSchema), zValidator('json', updateUserSchema), async (c) => {
   const { id } = c.req.valid('param');
   const updateData = c.req.valid('json');
   const currentUser = c.get('user')!;
@@ -523,7 +520,7 @@ usersRouter.put('/:id', requireAuth, zValidator('param', uuidSchema), zValidator
 });
 
 // Deactivate user (Admin and above)
-usersRouter.post('/:id/deactivate', requireAdmin, zValidator('param', uuidSchema), async (c) => {
+usersRouter.post('/:id/deactivate', requireAdmin, zValidator('param', uuidParamSchema), async (c) => {
   const { id } = c.req.valid('param');
   const currentUser = c.get('user')!;
 

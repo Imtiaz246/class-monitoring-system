@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db, sections, users } from "../db";
-import { createSectionSchema, uuidSchema } from "../utils/validation";
+import { createSectionSchema } from "../utils/validation";
 import { requireAdmin } from "../middleware/auth";
 import { createError } from "../utils/errors";
 import type { HonoContext } from "../utils/types";
@@ -31,10 +31,7 @@ sectionsRouter.post(
         .limit(1);
 
       if (existingSection.length > 0) {
-        throw createError.conflict(
-          "Section with same name already exists for this semester",
-          "DUPLICATE_SECTION"
-        );
+        throw createError.conflict("Section with same name already exists for this semester");
       }
 
       const [newSection] = await db
@@ -62,10 +59,7 @@ sectionsRouter.post(
       }, 201);
     } catch (error) {
       if (error instanceof Error && error.message.includes("duplicate")) {
-        throw createError.conflict(
-          "Section with same name already exists for this semester",
-          "DUPLICATE_SECTION"
-        );
+        throw createError.conflict("Section with same name already exists for this semester");
       }
       throw error;
     }

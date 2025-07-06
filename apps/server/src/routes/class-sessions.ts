@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db, classSessions, routines, sections, courses, rooms, teacherProfiles, users, bookedRooms, bookedTeachers } from "../db";
-import { getSessionsSchema, updateSessionSchema, uuidSchema } from "../utils/validation";
+import { getSessionsSchema, updateSessionSchema, uuidParamSchema } from "../utils/validation";
 import { requireTeacherOrAdmin, requireCROrTeacher } from "../middleware/auth";
 import { createError } from "../utils/errors";
 import type { HonoContext } from "../utils/types";
@@ -103,7 +103,7 @@ classSessionsRouter.get(
 classSessionsRouter.put(
   "/:id",
   requireCROrTeacher,
-  zValidator("param", z.object({ id: uuidSchema })),
+  zValidator("param", uuidParamSchema),
   zValidator("json", updateSessionSchema),
   async (c) => {
     const { id: sessionId } = c.req.valid("param");

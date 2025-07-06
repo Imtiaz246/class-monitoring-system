@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db, courses, users, courseTeacher, teacherProfiles } from "../db";
-import { createCourseSchema, addTeachersToCourseSchema, uuidSchema } from "../utils/validation";
+import { createCourseSchema, addTeachersToCourseSchema } from "../utils/validation";
 import { requireAdmin } from "../middleware/auth";
 import { createError } from "../utils/errors";
 import type { HonoContext } from "../utils/types";
@@ -28,10 +28,7 @@ coursesRouter.post(
         .limit(1);
 
       if (existingCourse.length > 0) {
-        throw createError.conflict(
-          "Course code already exists",
-          "DUPLICATE_COURSE_CODE"
-        );
+        throw createError.conflict("Course code already exists");
       }
 
       // Check if course name already exists
@@ -42,10 +39,7 @@ coursesRouter.post(
         .limit(1);
 
       if (existingCourseName.length > 0) {
-        throw createError.conflict(
-          "Course name already exists",
-          "DUPLICATE_COURSE_NAME"
-        );
+        throw createError.conflict("Course name already exists");
       }
 
       const [newCourse] = await db
@@ -75,10 +69,7 @@ coursesRouter.post(
       }, 201);
     } catch (error) {
       if (error instanceof Error && error.message.includes("duplicate")) {
-        throw createError.conflict(
-          "Course code or name already exists",
-          "DUPLICATE_COURSE"
-        );
+        throw createError.conflict("Course code or name already exists");
       }
       throw error;
     }
@@ -163,10 +154,7 @@ coursesRouter.post(
         );
 
       if (existingAssignments.length > 0) {
-        throw createError.conflict(
-          "One or more teachers are already assigned to this course",
-          "TEACHER_ALREADY_ASSIGNED"
-        );
+        throw createError.conflict("One or more teachers are already assigned to this course");
       }
 
       // Create course-teacher assignments
