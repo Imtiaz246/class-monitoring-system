@@ -1,29 +1,22 @@
 import { Hono } from 'hono';
+import crypto from 'crypto';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { db, users, studentProfiles, teacherProfiles, batches, sections } from '../db';
+import { db, users, teacherProfiles, studentProfiles, sections, batches } from '../db';
 import { jwtAuth } from '../lib/jwt-auth';
 import { createError } from '../utils/errors';
 import type { HonoContext } from '../utils/types';
 import { uuidParamSchema } from '../utils/validation';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { 
   requireAuth, 
   requireSuperAdmin,
   requireAdmin
 } from '../middleware/jwt-auth';
+import { sendVerificationEmail } from '../utils/email';
+import { alias } from 'drizzle-orm/pg-core';
 
 const usersRouter = new Hono<HonoContext>();
-
-// Validation schemas
-const createSuperAdminSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  developerKey: z.string().min(1, 'Developer key is required'),
-});
 
 const createAdminSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -43,19 +36,6 @@ const createTeacherSchema = z.object({
   isGuestTeacher: z.boolean().default(false),
 });
 
-const createStudentSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  studentId: z.string().min(1, 'Student ID is required'),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  semester: z.number().int().min(1).max(12),
-  batchId: z.string().uuid('Invalid batch ID'),
-  sectionId: z.string().uuid('Invalid section ID'),
-  priority: z.number().int().min(0).max(1).default(1), // 0 = CR, 1 = normal
-});
-
 const updateUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
@@ -64,84 +44,9 @@ const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-
-
-// Create Super Admin (requires developer key)
-usersRouter.post('/create-super-admin', zValidator('json', createSuperAdminSchema), async (c) => {
-  const { email, name, gender, phone, address, developerKey } = c.req.valid('json');
-
-  // Verify developer key
-  const expectedDeveloperKey = process.env.DEVELOPER_KEY || 'dev-key-12345';
-  if (developerKey !== expectedDeveloperKey) {
-    throw createError.forbidden('Invalid developer key');
-  }
-
-  try {
-    // Check if super admin already exists
-    const [existingSuperAdmin] = await db
-      .select()
-      .from(users)
-      .where(eq(users.role, 'super_admin'))
-      .limit(1);
-
-    if (existingSuperAdmin) {
-      throw createError.conflict('Super Admin already exists');
-    }
-
-    // Check if user with email exists
-    const [existingUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (existingUser) {
-      throw createError.conflict('User with this email already exists');
-    }
-
-    // Generate temporary password
-    const tempPassword = jwtAuth.generateRandomPassword(12);
-    const hashedPassword = jwtAuth.hashPassword(tempPassword);
-
-    // Create super admin
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        email,
-        password: hashedPassword,
-        name,
-        role: 'super_admin',
-        gender,
-        phone,
-        address,
-        emailVerified: true, // Super admin is auto-verified
-        isActive: true,
-      })
-      .returning();
-
-    return c.json({
-      message: 'Super Admin created successfully',
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-      },
-      temporaryPassword: tempPassword, // In production, send via email
-    }, 201);
-  } catch (error) {
-    if (error instanceof Error && (error.message.includes('already exists') || error.message.includes('Invalid'))) {
-      throw error;
-    }
-    console.error('Create super admin error:', error);
-    throw createError.internalServer('Failed to create super admin');
-  }
-});
-
 // Create Admin/Chairman (Super Admin only)
 usersRouter.post('/create-admin', requireSuperAdmin, zValidator('json', createAdminSchema), async (c) => {
   const { email, name, role, gender, phone, address } = c.req.valid('json');
-  const currentUser = c.get('user')!;
 
   try {
     // Check if user with email exists
@@ -156,34 +61,45 @@ usersRouter.post('/create-admin', requireSuperAdmin, zValidator('json', createAd
     }
 
     // Generate temporary password
-    const tempPassword = jwtAuth.generateRandomPassword(12);
+    const tempPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
     const hashedPassword = jwtAuth.hashPassword(tempPassword);
 
-    // Create admin/chairman
+    // Generate email verification token
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); 
+
     const [newUser] = await db
       .insert(users)
       .values({
-        email,
+        email: email,
         password: hashedPassword,
-        name,
-        role,
-        gender,
-        phone,
-        address,
-        emailVerified: false, // Will need to verify email
+        name: name,
+        role: role,
+        gender: gender,
+        phone: phone,
+        address: address,
+        emailVerified: false,
+        emailVerificationToken: emailVerificationToken,
+        emailVerificationExpires: emailVerificationTokenExpires,
         isActive: true,
       })
       .returning();
 
+    try {
+      await sendVerificationEmail(email, emailVerificationToken, name, tempPassword);
+      console.log('✅ Verification email sent successfully');
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send verification email (continuing anyway):', emailError instanceof Error ? emailError.message : String(emailError));
+    }
+
     return c.json({
-      message: `${role} created successfully`,
+      message: `${role} created successfully. Please check email to verify account before logging in.`,
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
-      },
-      temporaryPassword: tempPassword, // In production, send via email
+      }
     }, 201);
   } catch (error) {
     if (error instanceof Error && error.message.includes('already exists')) {
@@ -212,41 +128,56 @@ usersRouter.post('/create-teacher', requireAdmin, zValidator('json', createTeach
     }
 
     // Generate temporary password
-    const tempPassword = jwtAuth.generateRandomPassword(12);
+    // use dummy password for strealine the development process (remove this once development done)
+    // const tempPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const tempPassword = "12345678"
     const hashedPassword = jwtAuth.hashPassword(tempPassword);
+
+    // Generate email verification token
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); 
 
     // Create teacher user
     const [newUser] = await db
       .insert(users)
       .values({
-        email,
+        email: email,
         password: hashedPassword,
-        name,
+        name: name,
         role: 'teacher',
-        gender,
-        phone,
-        address,
-        emailVerified: false,
+        gender: gender,
+        phone: phone,
+        address: address,
+        emailVerified: true, // make it false when development is done
+        emailVerificationToken: emailVerificationToken,
+        emailVerificationExpires: emailVerificationTokenExpires,
         isActive: true,
       })
       .returning();
 
-    // Create teacher profile
-    await db.insert(teacherProfiles).values({
-      userId: newUser.id,
-      isGuestTeacher,
-      updatedBy: currentUser.id,
-    });
+    await db.insert(teacherProfiles)
+      .values({
+        userId: newUser.id,
+        isGuestTeacher: isGuestTeacher,
+        updatedBy: currentUser.id
+      })
+    
+    try {
+      await sendVerificationEmail(email, emailVerificationToken, name, tempPassword);
+      console.log('✅ Verification email sent successfully');
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send verification email (continuing anyway):', emailError instanceof Error ? emailError.message : String(emailError));
+    }
 
     return c.json({
-      message: 'Teacher created successfully',
+      message: `Teacher created successfully. Please check email to verify account before logging in.`,
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
-      },
-      temporaryPassword: tempPassword, // In production, send via email
+        isGuestTeacher: isGuestTeacher
+      }
     }, 201);
   } catch (error) {
     if (error instanceof Error && error.message.includes('already exists')) {
@@ -257,138 +188,81 @@ usersRouter.post('/create-teacher', requireAdmin, zValidator('json', createTeach
   }
 });
 
-// Create Student (Admin and above)
-usersRouter.post('/create-student', requireAdmin, zValidator('json', createStudentSchema), async (c) => {
-  const { email, name, studentId, gender, phone, address, semester, batchId, sectionId, priority } = c.req.valid('json');
-  const currentUser = c.get('user')!;
-
+// Get all teachers
+usersRouter.get('/teachers', requireAdmin, async (c) => {
   try {
-    // Check if user with email exists
-    const [existingUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (existingUser) {
-      throw createError.conflict('User with this email already exists');
-    }
-
-    // Check if student ID exists
-    const [existingStudent] = await db
-      .select()
-      .from(studentProfiles)
-      .where(eq(studentProfiles.studentId, studentId))
-      .limit(1);
-
-    if (existingStudent) {
-      throw createError.conflict('Student ID already exists');
-    }
-
-    // Verify batch and section exist
-    const [batch] = await db
-      .select()
-      .from(batches)
-      .where(eq(batches.batchId, batchId))
-      .limit(1);
-
-    if (!batch) {
-      throw createError.badRequest('Invalid batch ID');
-    }
-
-    const [section] = await db
-      .select()
-      .from(sections)
-      .where(and(
-        eq(sections.sectionId, sectionId),
-        eq(sections.batchId, batchId)
-      ))
-      .limit(1);
-
-    if (!section) {
-      throw createError.badRequest('Invalid section ID or section does not belong to the specified batch');
-    }
-
-    // Generate temporary password
-    const tempPassword = jwtAuth.generateRandomPassword(12);
-    const hashedPassword = jwtAuth.hashPassword(tempPassword);
-
-    // Determine role based on priority
-    const role = priority === 0 ? 'cr_student' : 'student';
-
-    // Create student user
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        email,
-        password: hashedPassword,
-        name,
-        role,
-        gender,
-        phone,
-        address,
-        emailVerified: false,
-        isActive: true,
+    const updater = alias(users, 'updater');
+    const allTeachers = await db
+      .select({
+        userId: users.id,
+        teacherId: teacherProfiles.teacherId,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        address: users.address,
+        gender: users.gender,
+        isGuestTeacher: teacherProfiles.isGuestTeacher,
+        updatedByUser: {
+          id: updater.id,
+          name: updater.name,
+          email: updater.email,
+          updatedAt: teacherProfiles.updatedAt
+        }
       })
-      .returning();
+      .from(users)
+      .innerJoin(teacherProfiles, eq(users.id, teacherProfiles.userId))
+      .innerJoin(updater, eq(teacherProfiles.updatedBy, updater.id))
+      .where(eq(users.role, 'teacher'));
 
-    // Create student profile
-    await db.insert(studentProfiles).values({
-      studentId,
-      userId: newUser.id,
-      semester,
-      batchId,
-      sectionId,
-      priority,
-      updatedBy: currentUser.id,
-    });
-
-    return c.json({
-      message: `${role === 'cr_student' ? 'CR Student' : 'Student'} created successfully`,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        studentId,
-      },
-      temporaryPassword: tempPassword, // In production, send via email
-    }, 201);
+    return c.json({ teachers: allTeachers });
   } catch (error) {
-    if (error instanceof Error && (error.message.includes('already exists') || error.message.includes('Invalid'))) {
-      throw error;
-    }
-    console.error('Create student error:', error);
-    throw createError.internalServer('Failed to create student');
+    console.error('Get teachers error:', error);
+    throw createError.internalServer('Failed to fetch teachers');
   }
 });
 
-// Get all users (Super Admin only)
-usersRouter.get('/', requireSuperAdmin, async (c) => {
+// Get all students
+usersRouter.get('/students', requireAdmin, async (c) => {
   try {
-    const allUsers = await db
+    const updater = alias(users, 'updater');
+    const allStudents = await db
       .select({
-        id: users.id,
-        email: users.email,
+        userId: users.id,
+        studentId: studentProfiles.studentId,
         name: users.name,
-        role: users.role,
-        gender: users.gender,
+        email: users.email,
         phone: users.phone,
         address: users.address,
-        emailVerified: users.emailVerified,
-        isActive: users.isActive,
-        lastLoginAt: users.lastLoginAt,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
+        gender: users.gender,
+        semester: studentProfiles.semester,
+        section: {
+          sectionId: sections.sectionId,
+          sectionName: sections.sectionName,
+        },
+        batch: {
+          batchId: batches.batchId,
+          batchName: batches.batchName,
+        },
+        updatedByUser: {
+          id: updater.id,
+          name: updater.name,
+          email: updater.email,
+          updatedAt: studentProfiles.updatedAt
+        }
       })
       .from(users)
-      .orderBy(users.createdAt);
-
-    return c.json({ users: allUsers });
+      .innerJoin(studentProfiles, eq(users.id, studentProfiles.userId))
+      .innerJoin(sections, eq(studentProfiles.sectionId, sections.sectionId))
+      .innerJoin(batches, eq(studentProfiles.batchId, batches.batchId))
+      .innerJoin(updater, eq(studentProfiles.updatedBy, updater.id))
+      .where(eq(users.role, 'student'));
+  
+    return c.json({ students: allStudents });
   } catch (error) {
-    console.error('Get users error:', error);
-    throw createError.internalServer('Failed to fetch users');
+    console.error('Get students error:', error);
+    throw createError.internalServer('Failed to fetch students');
   }
+
 });
 
 // Get user by ID
@@ -398,7 +272,7 @@ usersRouter.get('/:id', requireAuth, zValidator('param', uuidParamSchema), async
 
   try {
     // Check if user can access this profile
-    const isAdmin = ['super_admin', 'chairman', 'admin', 'teacher'].includes(currentUser.role);
+    const isAdmin = ['super_admin', 'chairman', 'admin'].includes(currentUser.role);
     const isSelf = currentUser.id === id;
 
     if (!isAdmin && !isSelf) {

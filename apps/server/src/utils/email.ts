@@ -20,10 +20,22 @@ const createTransporter = () => {
 };
 
 // Send email verification
-export const sendVerificationEmail = async (email: string, token: string, name: string) => {
+export const sendVerificationEmail = async (
+  email: string,
+  token: string,
+  name: string,
+  password?: string // optional parameter
+) => {
   try {
     const transporter = createTransporter();
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${token}`;
+
+    const passwordSection = password
+      ? `
+        <p><strong>Your temporary password:</strong> ${password}</p>
+        <p>Please change your password after logging in for security reasons.</p>
+      `
+      : '';
 
     const mailOptions = {
       from: process.env.NODEMAILER_USER,
@@ -41,6 +53,8 @@ export const sendVerificationEmail = async (email: string, token: string, name: 
               Verify Email Address
             </a>
           </div>
+
+          ${passwordSection}
           
           <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
           <p style="word-break: break-all; color: #007bff;">${verificationUrl}</p>
@@ -65,6 +79,7 @@ export const sendVerificationEmail = async (email: string, token: string, name: 
     throw createError.internalServer('Failed to send verification email');
   }
 };
+
 
 // Send password change OTP email
 export const sendPasswordChangeOtp = async (email: string, otp: string, name: string) => {

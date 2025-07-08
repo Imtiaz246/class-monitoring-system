@@ -47,14 +47,14 @@ export class AuthService {
     const [newUser] = await db
       .insert(users)
       .values({
-        email,
+        email: email,
         password: hashedPassword,
-        name,
+        name: name,
         role: 'student',
-        gender,
-        phone,
-        address,
-        emailVerified: false,
+        gender: gender,
+        phone: phone,
+        address: address,
+        emailVerified: true, // make it false when development is done
         emailVerificationToken: emailVerificationToken,
         emailVerificationExpires: emailVerificationExpires,
         passwordResetToken: studentId,
@@ -97,7 +97,7 @@ export class AuthService {
 
     // Check if email is verified
     if (!user.emailVerified) {
-      throw createError.unauthorized('Please verify your email before logging in. Check your inbox for the verification link.', 'EMAIL_NOT_VERIFIED');
+      throw createError.unauthorized('Please verify your email before logging in. Check your inbox for the verification link.');
     }
 
     // Verify password
