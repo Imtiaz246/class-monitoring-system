@@ -71,6 +71,18 @@ export const registerStudentSchema = z.object({
     example: 'S202400',
     description: 'Unique student identification number'
   }),
+  semester: z.number().int().positive('Semester must be a positive integer').openapi({
+    example: 1,
+    description: 'Current semester of the student'
+  }),
+  batchId: uuidSchema.openapi({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'UUID of the batch the student belongs to'
+  }),
+  sectionId: uuidSchema.openapi({
+    example: '123e4567-e89b-12d3-a456-426614174001',
+    description: 'UUID of the section the student belongs to'
+  }),
 });
 
 export const loginSchema = z.object({

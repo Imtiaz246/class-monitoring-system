@@ -6,6 +6,9 @@ export interface RegisterStudentData {
   phone?: string;
   address?: string;
   studentId: string;
+  semester: number;
+  batchId: string;
+  sectionId: string;
 }
 
 export interface LoginData {

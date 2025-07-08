@@ -8,11 +8,7 @@ import type { RegisterStudentData, LoginData } from '../types/auth.types';
 
 export class AuthService {
   static async registerStudent(data: RegisterStudentData) {
-    const { email, password, name, gender, phone, address, studentId } = data;
-
-    if (!studentId) {
-      throw createError.badRequest('Student ID is required for student registration');
-    }
+    const { email, password, name, gender, phone, address, studentId, semester, batchId, sectionId } = data;
 
     // Check if user already exists
     const [existingUser] = await db
@@ -43,7 +39,14 @@ export class AuthService {
     const emailVerificationToken = crypto.randomBytes(32).toString('hex');
     const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Store studentId temporarily in a custom field for later use during verification
+    // Store student profile data temporarily for later use during verification
+    const studentProfileData = JSON.stringify({
+      studentId,
+      semester,
+      batchId,
+      sectionId
+    });
+
     const [newUser] = await db
       .insert(users)
       .values({
@@ -57,7 +60,7 @@ export class AuthService {
         emailVerified: true, // make it false when development is done
         emailVerificationToken: emailVerificationToken,
         emailVerificationExpires: emailVerificationExpires,
-        passwordResetToken: studentId,
+        passwordResetToken: studentProfileData,
       })
       .returning();
 
@@ -445,11 +448,24 @@ export class AuthService {
         .limit(1);
 
       if (!existingProfile) {
-        // Get studentId from temporarily stored data
-        const studentId = user.passwordResetToken;
+        // Get student profile data from temporarily stored data
+        const studentProfileDataStr = user.passwordResetToken;
         
-        if (!studentId) {
-          throw createError.badRequest('Student ID not found. Please register again.');
+        if (!studentProfileDataStr) {
+          throw createError.badRequest('Student profile data not found. Please register again.');
+        }
+
+        let studentProfileData;
+        try {
+          studentProfileData = JSON.parse(studentProfileDataStr);
+        } catch (error) {
+          throw createError.badRequest('Invalid student profile data. Please register again.');
+        }
+
+        const { studentId, semester, batchId, sectionId } = studentProfileData;
+
+        if (!studentId || !semester || !batchId || !sectionId) {
+          throw createError.badRequest('Incomplete student profile data. Please register again.');
         }
 
         // Check if student ID is already taken by another verified user
@@ -463,27 +479,27 @@ export class AuthService {
           throw createError.conflict('Student ID already exists');
         }
 
-        // Create student profile
+        // Create student profile with the provided data
         await db.insert(studentProfiles).values({
-          studentId,
+          studentId: studentId,
           userId: user.id,
-          semester: 1, // Default semester
-          batchId: null, // Will be set by admin
-          sectionId: null, // Will be set by admin
+          semester: semester,
+          batchId: batchId,
+          sectionId: sectionId,
           priority: 1, // Normal student
           updatedBy: user.id,
         });
       }
     }
 
-    // Update user as verified and clear verification token and temporary studentId
+    // Update user as verified and clear verification token and temporary student profile data
     await db
       .update(users)
       .set({
         emailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpires: null,
-        passwordResetToken: null, // Clear temporarily stored studentId
+        passwordResetToken: null, // Clear temporarily stored student profile data
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
