@@ -3,8 +3,9 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { authenticateToken } from "../middleware/jwt-auth";
 import { authRouter } from "./auth";
-import { authRouter as authOpenAPIRouter } from "./auth-openapi";
 import { usersRouter } from "./users";
+import { apiDocsRouter } from "./api-docs";
+import { unifiedDocsApp } from "./unified-docs";
 import { roomsRouter } from "./rooms";
 import { coursesRouter } from "./courses";
 import { sectionsRouter } from "./sections";
@@ -32,8 +33,11 @@ app.get("/health", (c) => {
 // JWT Authentication middleware (exclude docs and health routes)
 app.use("/api/*", authenticateToken);
 
-// OpenAPI Documentation routes
-app.route("/api/docs/auth", authOpenAPIRouter);
+// Unified API Documentation (single page with all sections)
+app.route("/api/docs", unifiedDocsApp);
+
+// Documentation sections overview
+app.route("/api/docs-overview", apiDocsRouter);
 
 // Auth routes (regular)
 app.route("/api/auth", authRouter);

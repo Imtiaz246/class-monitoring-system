@@ -267,7 +267,7 @@ authRouter.openapi(getCurrentUserRoute, async (c) => {
 const requestPasswordChangeOtpRoute = createRoute({
   method: 'post',
   path: '/request-password-change-otp',
-  tags: ['Password Management'],
+  tags: ['Authentication'],
   summary: 'Request password change OTP',
   description: 'Request a one-time password (OTP) to change password. Requires current password verification.',
   security: [{ Bearer: [] }],
@@ -316,7 +316,7 @@ authRouter.openapi(requestPasswordChangeOtpRoute, async (c) => {
 const verifyPasswordChangeOtpRoute = createRoute({
   method: 'post',
   path: '/verify-password-change-otp',
-  tags: ['Password Management'],
+  tags: ['Authentication'],
   summary: 'Verify password change OTP',
   description: 'Verify the OTP and receive a short-lived token for password change.',
   security: [{ Bearer: [] }],
@@ -366,7 +366,7 @@ authRouter.openapi(verifyPasswordChangeOtpRoute, async (c) => {
 const changePasswordWithTokenRoute = createRoute({
   method: 'post',
   path: '/change-password',
-  tags: ['Password Management'],
+  tags: ['Authentication'],
   summary: 'Change password with token',
   description: 'Change password using the token received from OTP verification.',
   security: [{ Bearer: [] }],
@@ -412,7 +412,7 @@ authRouter.openapi(changePasswordWithTokenRoute, async (c) => {
 const verifyEmailRoute = createRoute({
   method: 'post',
   path: '/verify-email',
-  tags: ['Email Verification'],
+  tags: ['Authentication'],
   summary: 'Verify email address',
   description: 'Verify user email address using the verification token sent via email.',
   request: {
@@ -467,7 +467,7 @@ authRouter.openapi(verifyEmailRoute, async (c) => {
 const resendVerificationRoute = createRoute({
   method: 'post',
   path: '/resend-verification',
-  tags: ['Email Verification'],
+  tags: ['Authentication'],
   summary: 'Resend verification email',
   description: 'Resend email verification link to the specified email address.',
   request: {
