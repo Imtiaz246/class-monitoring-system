@@ -85,15 +85,12 @@ export const requireAuth = async (c: Context<HonoContext>, next: Next) => {
 export const requireRole = (allowedRoles: UserRole[]) => {
   return async (c: Context<HonoContext>, next: Next) => {
     const user = c.get('user');
-    
     if (!user) {
       throw createError.unauthorized('Authentication required');
     }
-    
     if (!allowedRoles.includes(user.role as UserRole)) {
       throw createError.forbidden('Insufficient permissions');
     }
-    
     await next();
   };
 };
@@ -109,6 +106,20 @@ export const requireChairmanOrAbove = requireRole(['super_admin', 'chairman']);
 
 // Middleware for teacher or admin access
 export const requireTeacherOrAdmin = requireRole(['super_admin', 'chairman', 'admin', 'teacher']);
+
+// Middleware for self access
+export const requireSelf = async (c: Context<HonoContext>, next: Next) => {
+  const user = c.get('user');
+  const paramUserId = c.req.param('id');
+  if (!user) {
+    throw createError.unauthorized('Authentication required');
+  }
+  const isSelf = user.id === paramUserId;
+  if (!isSelf) {
+    throw createError.forbidden('You can only update your own profile');
+  }
+  await next();
+}
 
 // Middleware to allow self or admin access
 export const requireSelfOrAdmin = async (c: Context<HonoContext>, next: Next) => {

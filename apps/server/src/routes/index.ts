@@ -9,8 +9,6 @@ import { roomsRouter } from "./rooms";
 import { coursesRouter } from "./courses";
 import { sectionsRouter } from "./sections";
 import { batchesRouter } from "./batches";
-import { studentProfilesRouter } from "./student-profiles";
-import { teacherProfilesRouter } from "./teacher-profiles";
 import { routinesRouter } from "./routines";
 import { classSessionsRouter } from "./class-sessions";
 import type { HonoContext } from "../utils/types";
@@ -48,8 +46,6 @@ app.route("/api/v1/rooms", roomsRouter);
 app.route("/api/v1/courses", coursesRouter);
 app.route("/api/v1/sections", sectionsRouter);
 app.route("/api/v1/batches", batchesRouter);
-app.route("/api/v1/student-profiles", studentProfilesRouter);
-app.route("/api/v1/teacher-profiles", teacherProfilesRouter);
 app.route("/api/v1/routines", routinesRouter);
 app.route("/api/v1/sessions", classSessionsRouter);
 
