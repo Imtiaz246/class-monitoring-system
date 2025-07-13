@@ -145,11 +145,17 @@ export const createSectionSchema = z.object({
 
 // Batch schemas
 export const createBatchSchema = z.object({
-  batchName: z.string().min(1, "Batch name is required"),
+  batchName: z.string().min(1, "Batch name is required").openapi({
+    example: 'Batch 2024',
+    description: 'Name of the batch'
+  }),
 });
 
 export const updateBatchSchema = z.object({
-  batchName: z.string().min(1, "Batch name is required"),
+  batchName: z.string().min(1, "Batch name is required").openapi({
+    example: 'Updated Batch 2024',
+    description: 'Updated name of the batch'
+  }),
 });
 
 export const getBatchesSchema = paginationSchema;

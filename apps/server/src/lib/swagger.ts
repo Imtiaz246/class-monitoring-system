@@ -29,6 +29,10 @@ export const createOpenAPIApp = () => {
         name: 'User Management',
         description: 'User creation, retrieval, and management endpoints'
       },
+      {
+        name: 'Batch Management',
+        description: 'Batch creation, retrieval, and management endpoints'
+      },
     ],
   });
 

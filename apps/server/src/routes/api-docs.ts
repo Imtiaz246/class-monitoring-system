@@ -1,6 +1,7 @@
 import { createOpenAPIApp } from '../lib/swagger';
 import { authRouter } from './auth-openapi';
 import { usersRouter } from './users-openapi';
+import { batchesRouter } from './batches-openapi';
 
 // Create unified API documentation
 const apiDocsRouter = createOpenAPIApp();
@@ -8,6 +9,7 @@ const apiDocsRouter = createOpenAPIApp();
 // Mount all OpenAPI routes under unified documentation
 apiDocsRouter.route('/auth', authRouter);
 apiDocsRouter.route('/users', usersRouter);
+apiDocsRouter.route('/batches', batchesRouter);
 
 // Add a custom route to list all available documentation sections
 apiDocsRouter.get('/sections', (c) => {
@@ -27,6 +29,13 @@ apiDocsRouter.get('/sections', (c) => {
         path: '/users',
         swaggerUI: '/users/ui',
         openAPISpec: '/users/doc'
+      },
+      {
+        name: 'Batch Management',
+        description: 'Batch creation, retrieval, and management endpoints',
+        path: '/batches',
+        swaggerUI: '/batches/ui',
+        openAPISpec: '/batches/doc'
       }
     ],
     note: 'Visit the individual Swagger UI endpoints to explore the APIs'
