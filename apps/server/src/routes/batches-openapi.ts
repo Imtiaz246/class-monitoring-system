@@ -10,37 +10,14 @@ import {
 import { uuidParamSchema, createBatchSchema, updateBatchSchema, getBatchesSchema } from '../utils/validation';
 import { createError, AppError } from '../utils/errors';
 import { BatchService } from '../services/batch.service';
+import { 
+  BatchResponseSchema,
+  BatchListResponseSchema,
+  BatchCreateResponseSchema
+} from '../types/batch.types';
 
 // Create OpenAPI app instance
 const batchesRouter = createOpenAPIApp();
-
-// Batch response schemas
-const BatchResponseSchema = z.object({
-  batchId: z.string().uuid(),
-  batchName: z.string(),
-  updatedBy: z.object({
-    id: z.string().uuid().nullable(),
-    name: z.string().nullable(),
-    email: z.string().email().nullable(),
-    role: z.string().nullable(),
-    updatedAt: z.string().datetime(),
-  }),
-});
-
-const BatchListResponseSchema = z.object({
-  data: z.array(BatchResponseSchema),
-  meta: z.object({
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    totalPages: z.number(),
-  }),
-});
-
-const BatchCreateResponseSchema = z.object({
-  message: z.string(),
-  data: BatchResponseSchema,
-});
 
 // Create Batch Route
 const createBatchRoute = createRoute({

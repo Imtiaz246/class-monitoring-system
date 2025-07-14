@@ -2,7 +2,9 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { 
   createOpenAPIApp, 
   SuccessResponseSchema,
-  ErrorResponseSchema,
+  ErrorResponseSchema
+} from '../lib/swagger';
+import {
   UserResponseSchema,
   TeacherResponseSchema,
   StudentResponseSchema,
@@ -11,7 +13,7 @@ import {
   UpdateUserSchema,
   UpdateTeacherSchema,
   UpdateStudentSchema
-} from '../lib/swagger';
+} from '../types/user.types';
 import { 
   requireSuperAdmin,
   requireAdmin,

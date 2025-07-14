@@ -1,7 +1,7 @@
 import { db, batches, users } from '../db';
 import { createError } from '../utils/errors';
 import { eq, sql } from 'drizzle-orm';
-import type { CreateBatchData, UpdateBatchData, GetBatchesQuery } from '../types/batch.types.ts';
+import type { CreateBatchData, UpdateBatchData, GetBatchesQuery } from '../types/batch.types';
 
 export class BatchService {
   static async createBatch(data: CreateBatchData, updatedById: string) {

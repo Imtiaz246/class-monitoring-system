@@ -1,7 +1,7 @@
 import { db, sections, users, batches } from '../db';
 import { createError, AppError } from '../utils/errors';
 import { eq, and } from 'drizzle-orm';
-import type { CreateSectionData, SectionResponse, SectionsListResponse } from '../types/section.types.ts';
+import type { CreateSectionData, SectionResponse, SectionsListResponse } from '../types/section.types';
 
 export class SectionService {
   static async createSection(data: CreateSectionData, userId: string): Promise<SectionResponse> {

@@ -3,6 +3,16 @@ import { zValidator as originalZValidator } from '@hono/zod-validator';
 import type { ValidationTargets } from 'hono';
 import type { ZodIssue, ZodSchema } from 'zod';
 import { createError } from './errors';
+import { 
+  uuidSchema, 
+  roleSchema, 
+  genderSchema, 
+  paginationSchema,
+  uuidParamSchema,
+  timeSchema,
+  dayOfWeekSchema,
+  sessionStatusSchema
+} from '../types/common.types';
 
 // Custom zValidator wrapper that throws HTTPException for global error handling
 export const zValidator = <T extends ZodSchema, Target extends keyof ValidationTargets>(
@@ -14,107 +24,29 @@ export const zValidator = <T extends ZodSchema, Target extends keyof ValidationT
   }
 });
 
-// Common validation schemas
-export const uuidSchema = z.string().uuid('Invalid UUID format');
+// Re-export common validation schemas from common.types.ts
+export { 
+  uuidSchema, 
+  roleSchema, 
+  genderSchema, 
+  paginationSchema,
+  uuidParamSchema,
+  timeSchema,
+  dayOfWeekSchema,
+  sessionStatusSchema
+};
 
-export const uuidParamSchema = z.object({
-  id: z.string().uuid('Invalid UUID format'),
-});
-
-export const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-
-export const timeSchema = z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-  message: "Time must be in HH:mm format",
-});
-
-export const dayOfWeekSchema = z.enum([
-  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
-]);
-
-export const sessionStatusSchema = z.enum(['delivered', 'rescheduled', 'cancelled']);
-
-export const roleSchema = z.enum([
-  'super_admin', 'chairman', 'admin', 'cr_student', 'teacher', 'student'
-]);
-
-export const genderSchema = z.enum(['male', 'female', 'other']);
-
-export const registerStudentSchema = z.object({
-  email: z.string().email('Invalid email format').openapi({
-    example: 'user@example.com',
-    description: 'Student email address'
-  }),
-  password: z.string().min(8, 'Password must be at least 8 characters').openapi({
-    example: '********',
-    description: 'Password with minimum 8 characters'
-  }),
-  name: z.string().min(2, 'Name must be at least 2 characters').openapi({
-    example: 'John Doe',
-    description: 'Full name of the student'
-  }),
-  gender: z.enum(['male', 'female', 'other']).optional().openapi({
-    description: 'Optional. One of: "male", "female", or "other".',
-    example: 'male',
-  }),
-  phone: z.string().optional().openapi({
-    example: '+1234567890',
-    description: 'Phone number of the student'
-  }),
-  address: z.string().optional().openapi({
-    example: '123 University Street, College Town',
-    description: 'Home address of the student'
-  }),
-  studentId: z.string().min(1, 'Student ID is required').openapi({
-    example: 'S202400',
-    description: 'Unique student identification number'
-  }),
-  semester: z.number().int().positive('Semester must be a positive integer').openapi({
-    example: 1,
-    description: 'Current semester of the student'
-  }),
-  batchId: uuidSchema.openapi({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'UUID of the batch the student belongs to'
-  }),
-  sectionId: uuidSchema.openapi({
-    example: '123e4567-e89b-12d3-a456-426614174001',
-    description: 'UUID of the section the student belongs to'
-  }),
-});
-
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
-
-export const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Verification token is required'),
-});
-
-export const resendVerificationSchema = z.object({
-  email: z.string().email('Invalid email format'),
-});
-
-export const requestPasswordChangeOtpSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-});
-
-export const verifyPasswordChangeOtpSchema = z.object({
-  otp: z.string().length(6, 'OTP must be exactly 6 digits'),
-});
-
-export const changePasswordWithTokenSchema = z.object({
-  passwordChangeToken: z.string().min(1, 'Password change token is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
+// Re-export authentication schemas from their respective types file
+export {
+  registerStudentSchema,
+  loginSchema,
+  changePasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+  requestPasswordChangeOtpSchema,
+  verifyPasswordChangeOtpSchema,
+  changePasswordWithTokenSchema
+} from '../types/auth.types';
 
 // Room schemas
 export const createRoomSchema = z.object({
@@ -137,29 +69,11 @@ export const addTeachersToCourseSchema = z.object({
   teacherIds: z.array(uuidSchema).min(1, "At least one teacher ID is required"),
 });
 
-// Section schemas
-export const createSectionSchema = z.object({
-  sectionName: z.string().min(1, "Section name is required"),
-  semester: z.number().int().positive("Semester must be greater than 0"),
-  batchId: uuidSchema,
-});
+// Re-export section schemas from their respective types file
+export { createSectionSchema } from '../types/section.types';
 
-// Batch schemas
-export const createBatchSchema = z.object({
-  batchName: z.string().min(1, "Batch name is required").openapi({
-    example: 'Batch 2024',
-    description: 'Name of the batch'
-  }),
-});
-
-export const updateBatchSchema = z.object({
-  batchName: z.string().min(1, "Batch name is required").openapi({
-    example: 'Updated Batch 2024',
-    description: 'Updated name of the batch'
-  }),
-});
-
-export const getBatchesSchema = paginationSchema;
+// Re-export batch schemas from their respective types file
+export { createBatchSchema, updateBatchSchema, getBatchesSchema } from '../types/batch.types';
 
 // Student profile schemas
 export const updateStudentProfileSchema = z.object({
