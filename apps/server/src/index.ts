@@ -11,6 +11,8 @@ console.log(`📚 Complete API Documentation (All Sections): http://localhost:${
 console.log(`📋 Documentation Overview: http://localhost:${port}/api/docs-overview/sections`);
 console.log(`🔐 Auth Only: http://localhost:${port}/api/docs/auth/ui`);
 console.log(`👥 Users Only: http://localhost:${port}/api/docs/users/ui`);
+console.log(`📦 Batches Only: http://localhost:${port}/api/docs/batches/ui`);
+console.log(`📚 Sections Only: http://localhost:${port}/api/docs/sections/ui`);
 
 // Use Bun's native server
 export default {

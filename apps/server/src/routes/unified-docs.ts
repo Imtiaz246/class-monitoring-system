@@ -2,6 +2,7 @@ import { createOpenAPIApp } from '../lib/swagger';
 import { authRouter } from './auth-openapi';
 import { usersRouter } from './users-openapi';
 import { batchesRouter } from './batches-openapi';
+import { sectionsRouter } from './sections-openapi';
 
 // Create unified documentation app that combines all OpenAPI specs
 const unifiedDocsApp = createOpenAPIApp();
@@ -10,6 +11,7 @@ const unifiedDocsApp = createOpenAPIApp();
 unifiedDocsApp.route('/auth', authRouter);
 unifiedDocsApp.route('v1/users', usersRouter);
 unifiedDocsApp.route('v1/batches', batchesRouter);
+unifiedDocsApp.route('v1/sections', sectionsRouter);
 
 // The unified app will automatically combine all mounted routes
 // and generate a single OpenAPI spec with all endpoints

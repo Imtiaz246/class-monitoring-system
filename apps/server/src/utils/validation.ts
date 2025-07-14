@@ -141,6 +141,7 @@ export const addTeachersToCourseSchema = z.object({
 export const createSectionSchema = z.object({
   sectionName: z.string().min(1, "Section name is required"),
   semester: z.number().int().positive("Semester must be greater than 0"),
+  batchId: uuidSchema,
 });
 
 // Batch schemas
