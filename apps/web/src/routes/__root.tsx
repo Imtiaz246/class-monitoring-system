@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
-import type { trpc } from "@/utils/trpc";
+import { ThemeProvider } from "@/components/theme-provider";
+import type { apiClient } from "@/utils/api";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
@@ -12,18 +13,23 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import "../index.css";
 
 export interface RouterAppContext {
-  trpc: typeof trpc;
+  apiClient: typeof apiClient;
   queryClient: QueryClient;
 }
 
 function RootComponent() {
   return (
-    <>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       <Outlet />
       <Toaster />
       <ReactQueryDevtools buttonPosition="top-left" />
       <TanStackRouterDevtools position="bottom-right" />
-    </>
+    </ThemeProvider>
   );
 }
 

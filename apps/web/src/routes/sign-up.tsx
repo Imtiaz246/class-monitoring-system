@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useRegisterStudent, useBatches, useSections, isAuthenticated } from '@/hooks/useAuth';
 
 export const Route = createFileRoute('/sign-up')({ 
@@ -121,7 +122,12 @@ function SignUpComponent() {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Theme Toggle */}
+      <div className="fixed top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+      
       <div className="max-w-2xl w-full space-y-8">
         {/* Header Section */}
         <div className="text-center">
@@ -130,21 +136,21 @@ function SignUpComponent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
             Join Our Community
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
             Create your student account to access the Class Monitoring System
           </p>
         </div>
         
         {/* Registration Card */}
-        <Card className="backdrop-blur-sm bg-white/80 border-0 shadow-xl">
+        <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-0 shadow-xl">
           <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+            <CardTitle className="text-2xl font-semibold text-center text-gray-900 dark:text-white">
               Student Registration
             </CardTitle>
-            <CardDescription className="text-center text-gray-600">
+            <CardDescription className="text-center text-gray-600 dark:text-gray-300">
               Fill in your details to create your account
             </CardDescription>
           </CardHeader>
@@ -158,12 +164,12 @@ function SignUpComponent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Full Name *
                     </Label>
                     <div className="relative group">
@@ -176,15 +182,15 @@ function SignUpComponent() {
                         placeholder="👤 Enter your full name"
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        className={`relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 ${
+                        className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 text-gray-900 dark:text-white ${
                           errors.name 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
                         style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px white',
-                            WebkitTextFillColor: '#374151',
-                            caretColor: '#374151'
+                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                            caretColor: 'var(--tw-text-opacity, 1)'
                          }}
                       />
                     </div>
@@ -199,7 +205,7 @@ function SignUpComponent() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Email Address *
                     </Label>
                     <div className="relative group">
@@ -212,15 +218,15 @@ function SignUpComponent() {
                         placeholder="📧 Enter your email address"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
-                        className={`relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 ${
+                        className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 dark:text-white ${
                           errors.email 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
                         style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px white',
-                            WebkitTextFillColor: '#374151',
-                            caretColor: '#374151'
+                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                            caretColor: 'var(--tw-text-opacity, 1)'
                          }}
                       />
                     </div>
@@ -244,12 +250,12 @@ function SignUpComponent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Security</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Security</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Password *
                     </Label>
                     <div className="relative group">
@@ -262,15 +268,15 @@ function SignUpComponent() {
                         placeholder="🔒 Enter your password"
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
-                        className={`relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 ${
+                        className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 dark:text-white ${
                           errors.password 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
                         style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px white',
-                            WebkitTextFillColor: '#374151',
-                            caretColor: '#374151'
+                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                            caretColor: 'var(--tw-text-opacity, 1)'
                          }}
                       />
                     </div>
@@ -285,7 +291,7 @@ function SignUpComponent() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Confirm Password *
                     </Label>
                     <div className="relative group">
@@ -298,15 +304,15 @@ function SignUpComponent() {
                         placeholder="🔐 Confirm your password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className={`relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 ${
+                        className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 dark:text-white ${
                           errors.confirmPassword 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
                         style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px white',
-                            WebkitTextFillColor: '#374151',
-                            caretColor: '#374151'
+                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                            caretColor: 'var(--tw-text-opacity, 1)'
                          }}
                       />
                     </div>
@@ -325,7 +331,7 @@ function SignUpComponent() {
               {/* Optional Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="gender" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Gender
                   </Label>
                   <div className="relative group">
@@ -334,12 +340,12 @@ function SignUpComponent() {
                       id="gender"
                       value={formData.gender}
                       onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="relative flex h-12 w-full rounded-xl border-2 bg-white/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 border-gray-200 hover:border-gray-300"
+                      className="relative flex h-12 w-full rounded-xl border-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 dark:disabled:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 dark:text-white"
                     >
-                      <option value="" className="text-gray-500 font-normal">👤 Select gender</option>
-                      <option value="male" className="text-gray-900 font-medium">👨 Male</option>
-                      <option value="female" className="text-gray-900 font-medium">👩 Female</option>
-                      <option value="other" className="text-gray-900 font-medium">🌈 Other</option>
+                      <option value="" className="text-gray-500 dark:text-gray-400 font-normal">👤 Select gender</option>
+                      <option value="male" className="text-gray-900 dark:text-white font-medium">👨 Male</option>
+                      <option value="female" className="text-gray-900 dark:text-white font-medium">👩 Female</option>
+                      <option value="other" className="text-gray-900 dark:text-white font-medium">🌈 Other</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                       <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-full p-1">
@@ -352,7 +358,7 @@ function SignUpComponent() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Phone
                   </Label>
                   <div className="relative group">
@@ -363,11 +369,11 @@ function SignUpComponent() {
                       placeholder="📱 Enter your phone number"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 border-gray-200 hover:border-gray-300 focus:border-blue-500"
+                      className="relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500 dark:text-white"
                       style={{
-                        WebkitBoxShadow: 'inset 0 0 0 30px white',
-                        WebkitTextFillColor: '#374151',
-                        caretColor: '#374151'
+                        WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                        WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                        caretColor: 'var(--tw-text-opacity, 1)'
                       }}
                     />
                   </div>
@@ -375,7 +381,7 @@ function SignUpComponent() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="address" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="address" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Address
                 </Label>
                 <div className="relative group">
@@ -386,11 +392,11 @@ function SignUpComponent() {
                     placeholder="🏠 Enter your address"
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    className="relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 border-gray-200 hover:border-gray-300 focus:border-blue-500"
+                    className="relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500 dark:text-white"
                     style={{
-                        WebkitBoxShadow: 'inset 0 0 0 30px white',
-                        WebkitTextFillColor: '#374151',
-                        caretColor: '#374151'
+                        WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                        WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                        caretColor: 'var(--tw-text-opacity, 1)'
                        }}
                   />
                 </div>
@@ -405,12 +411,12 @@ function SignUpComponent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Academic Information</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Academic Information</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="studentId" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="studentId" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Student ID *
                     </Label>
                     <div className="relative group">
@@ -423,15 +429,15 @@ function SignUpComponent() {
                         placeholder="🆔 Enter your student ID"
                         value={formData.studentId}
                         onChange={(e) => handleInputChange('studentId', e.target.value)}
-                        className={`relative h-12 rounded-xl border-2 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 ${
+                        className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 dark:text-white ${
                           errors.studentId 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
                         style={{
-                           WebkitBoxShadow: 'inset 0 0 0 30px white',
-                           WebkitTextFillColor: '#374151',
-                           caretColor: '#374151'
+                           WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
+                           WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
+                           caretColor: 'var(--tw-text-opacity, 1)'
                          }}
                       />
                     </div>
@@ -446,7 +452,7 @@ function SignUpComponent() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="semester" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="semester" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Semester *
                     </Label>
                     <div className="relative group">
@@ -457,21 +463,21 @@ function SignUpComponent() {
                         id="semester"
                         value={formData.semester}
                         onChange={(e) => handleInputChange('semester', e.target.value)}
-                        className={`relative flex h-12 w-full rounded-xl border-2 bg-white/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 ${
+                        className={`relative flex h-12 w-full rounded-xl border-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 dark:disabled:bg-gray-700/80 dark:text-white ${
                           errors.semester 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                         }`}
                       >
-                        <option value="" className="text-gray-500 font-normal">✨ Select your semester</option>
-                        <option value="1" className="text-gray-900 font-medium">📚 1st Semester</option>
-                        <option value="2" className="text-gray-900 font-medium">📚 2nd Semester</option>
-                        <option value="3" className="text-gray-900 font-medium">📚 3rd Semester</option>
-                        <option value="4" className="text-gray-900 font-medium">📚 4th Semester</option>
-                        <option value="5" className="text-gray-900 font-medium">📚 5th Semester</option>
-                        <option value="6" className="text-gray-900 font-medium">📚 6th Semester</option>
-                        <option value="7" className="text-gray-900 font-medium">📚 7th Semester</option>
-                        <option value="8" className="text-gray-900 font-medium">📚 8th Semester</option>
+                        <option value="" className="text-gray-500 dark:text-gray-400 font-normal">✨ Select your semester</option>
+                        <option value="1" className="text-gray-900 dark:text-white font-medium">📚 1st Semester</option>
+                        <option value="2" className="text-gray-900 dark:text-white font-medium">📚 2nd Semester</option>
+                        <option value="3" className="text-gray-900 dark:text-white font-medium">📚 3rd Semester</option>
+                        <option value="4" className="text-gray-900 dark:text-white font-medium">📚 4th Semester</option>
+                        <option value="5" className="text-gray-900 dark:text-white font-medium">📚 5th Semester</option>
+                        <option value="6" className="text-gray-900 dark:text-white font-medium">📚 6th Semester</option>
+                        <option value="7" className="text-gray-900 dark:text-white font-medium">📚 7th Semester</option>
+                        <option value="8" className="text-gray-900 dark:text-white font-medium">📚 8th Semester</option>
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                         <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-1">
@@ -494,7 +500,7 @@ function SignUpComponent() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="batchId" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="batchId" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Batch *
                     </Label>
                     <div className="relative group">
@@ -505,18 +511,18 @@ function SignUpComponent() {
                         id="batchId"
                         value={formData.batchId}
                         onChange={(e) => handleInputChange('batchId', e.target.value)}
-                        className={`relative flex h-12 w-full rounded-xl border-2 bg-white/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 ${
+                        className={`relative flex h-12 w-full rounded-xl border-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 dark:disabled:bg-gray-700/80 dark:text-white ${
                           errors.batchId 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                         }`}
                         disabled={batchesLoading}
                       >
-                        <option value="" className="text-gray-500 font-normal">
+                        <option value="" className="text-gray-500 dark:text-gray-400 font-normal">
                           {batchesLoading ? '🔄 Loading batches...' : '🎓 Select your batch'}
                         </option>
                         {batchesData?.data?.map((batch) => (
-                          <option key={batch.batchId} value={batch.batchId} className="text-gray-900 font-medium">
+                          <option key={batch.batchId} value={batch.batchId} className="text-gray-900 dark:text-white font-medium">
                             📋 {batch.batchName}
                           </option>
                         ))}
@@ -540,7 +546,7 @@ function SignUpComponent() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="sectionId" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="sectionId" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Section *
                     </Label>
                     <div className="relative group">
@@ -551,14 +557,14 @@ function SignUpComponent() {
                         id="sectionId"
                         value={formData.sectionId}
                         onChange={(e) => handleInputChange('sectionId', e.target.value)}
-                        className={`relative flex h-12 w-full rounded-xl border-2 bg-white/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 ${
+                        className={`relative flex h-12 w-full rounded-xl border-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50/80 dark:disabled:bg-gray-700/80 dark:text-white ${
                           errors.sectionId 
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                         }`}
                         disabled={!formData.batchId || sectionsLoading || (sectionsData?.data && sectionsData.data.length === 0)}
                       >
-                        <option value="" className="text-gray-500 font-normal">
+                        <option value="" className="text-gray-500 dark:text-gray-400 font-normal">
                           {!formData.batchId 
                             ? '⚠️ Please select a batch first' 
                             : sectionsLoading 
@@ -569,7 +575,7 @@ function SignUpComponent() {
                           }
                         </option>
                         {sectionsData?.data?.map((section) => (
-                          <option key={section.sectionId} value={section.sectionId} className="text-gray-900 font-medium">
+                          <option key={section.sectionId} value={section.sectionId} className="text-gray-900 dark:text-white font-medium">
                             🏫 {section.sectionName} (Semester {section.semester})
                           </option>
                         ))}
@@ -622,12 +628,12 @@ function SignUpComponent() {
               </Button>
             </form>
             
-            <div className="mt-6 text-center pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
+            <div className="mt-6 text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Already have an account?{' '}
                 <Link 
                   to="/sign-in" 
-                  className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors duration-200"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium hover:underline transition-colors duration-200"
                 >
                   Sign in here
                 </Link>
