@@ -12,18 +12,15 @@ export class SectionService {
       const existingSection = await db
         .select()
         .from(sections)
-        .where(and(
-          eq(sections.sectionName, sectionName),
-          eq(sections.semester, semester),
-          eq(sections.batchId, batchId)
-        ))
+        .where(eq(sections.batchId, batchId))
         .limit(1);
 
       if (existingSection.length > 0) {
         if (existingSection[0].semester !== semester) {
           throw createError.conflict("Batch was assigned to another semester");
+        } else if (existingSection[0].sectionName === sectionName) {
+          throw createError.conflict("Section with same name already exists for this semester");
         }
-        throw createError.conflict("Section with same name already exists for this semester");
       }
 
       // Get user details for response

@@ -58,7 +58,8 @@ export class UserService {
     }
 
     // Generate temporary password
-    const tempPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
+    // const tempPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const tempPassword = '12345678'
     const hashedPassword = jwtAuth.hashPassword(tempPassword);
 
     // Generate email verification token
@@ -75,7 +76,7 @@ export class UserService {
         gender: gender,
         phone: phone,
         address: address,
-        emailVerified: false,
+        emailVerified: true, //false,
         emailVerificationToken: emailVerificationToken,
         emailVerificationExpires: emailVerificationTokenExpires,
         isActive: true,
@@ -183,6 +184,7 @@ export class UserService {
           id: updater.id,
           name: updater.name,
           email: updater.email,
+          role: updater.role,
           updatedAt: teacherProfiles.updatedAt
         }
       })
@@ -219,6 +221,7 @@ export class UserService {
           id: updater.id,
           name: updater.name,
           email: updater.email,
+          role: updater.role,
           updatedAt: studentProfiles.updatedAt
         }
       })
@@ -284,6 +287,7 @@ export class UserService {
           id: updater.id,
           name: updater.name,
           email: updater.email,
+          role: updater.role,
           updatedAt: teacherProfiles.updatedAt
         }
       })
@@ -330,9 +334,9 @@ export class UserService {
           id: updater.id,
           name: updater.name,
           email: updater.email,
+          role: updater.role,
           updatedAt: studentProfiles.updatedAt
-        },
-        updatedAt: studentProfiles.updatedAt
+        }
       })
       .from(users)
       .innerJoin(studentProfiles, eq(users.id, studentProfiles.userId))

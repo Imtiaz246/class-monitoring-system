@@ -476,9 +476,7 @@ const getStudentByIdRoute = createRoute({
       description: 'Student retrieved successfully',
       content: {
         'application/json': {
-          schema: StudentResponseSchema.extend({
-            updatedAt: z.string().datetime(),
-          }),
+          schema: StudentResponseSchema,
         },
       },
     },

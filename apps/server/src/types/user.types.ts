@@ -31,6 +31,7 @@ export const TeacherResponseSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
     email: z.string().email(),
+    role: roleSchema,
     updatedAt: z.string().datetime(),
   }),
 });
@@ -57,6 +58,7 @@ export const StudentResponseSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
     email: z.string().email(),
+    role: roleSchema,
     updatedAt: z.string().datetime(),
   }),
 });

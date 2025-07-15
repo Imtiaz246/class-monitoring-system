@@ -1,4 +1,4 @@
-import { db, users, refreshTokens, studentProfiles } from '../db';
+import { db, users, sections, refreshTokens, studentProfiles } from '../db';
 import { jwtAuth } from '../lib/jwt-auth';
 import { createError } from '../utils/errors';
 import { sendVerificationEmail, sendPasswordChangeOtp } from '../utils/email';
@@ -19,6 +19,22 @@ export class AuthService {
 
     if (existingUser) {
       throw createError.conflict('User with this email already exists');
+    }
+
+    // Check if semester assosiated with batch & section
+    const [existingSection] = await db
+      .select()
+      .from(sections)
+      .where(eq(sections.sectionId, sectionId))
+      .limit(1);
+    if (!existingSection) {
+      throw createError.notFound('Section not found');
+    } else {
+      if (existingSection.batchId !== batchId) {
+        throw createError.conflict('Batch not assosiated with section');
+      } else if (existingSection.semester !== semester) {
+        throw createError.conflict('Semester not assosiated with section');
+      }
     }
 
     // Check if student ID already exists
@@ -57,7 +73,7 @@ export class AuthService {
         gender: gender,
         phone: phone,
         address: address,
-        emailVerified: true, // make it false when development is done
+        emailVerified: false,
         emailVerificationToken: emailVerificationToken,
         emailVerificationExpires: emailVerificationExpires,
         passwordResetToken: studentProfileData,
@@ -80,6 +96,7 @@ export class AuthService {
         name: newUser.name,
         role: newUser.role,
         emailVerified: newUser.emailVerified,
+        tempLink: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${emailVerificationToken}`, // remove this once development is done
       },
     };
   }
