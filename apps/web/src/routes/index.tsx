@@ -1,35 +1,92 @@
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { isAuthenticated, logout } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({
+        to: '/sign-in',
+      });
+    }
+  },
   component: HomeComponent,
 });
 
 function HomeComponent() {
-  const [state, setState] = useState("")
+  const [state, setState] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: '/sign-in' });
+  };
 
   return (
-    <div>
-      <h1>Home</h1>
-      <button 
-        onClick={() => {
-          fetch("/api/health")
-            .then((res) => res.text())
-            .then((data) => {
-              setState(data)
-            });
-        }}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
-      >
-        HealthCheck
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation Header */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-gray-900">
+                Class Monitoring System
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="text-gray-700 hover:text-gray-900"
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-      <div>
-        {state === "" ? <h1>Not Healthy</h1> : <h1>Healthy</h1>}
-      </div>
-    
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Welcome to the Dashboard
+              </h2>
+              <p className="text-gray-600 mb-6">
+                You are successfully logged in to the Class Monitoring System.
+              </p>
+              
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => {
+                    fetch("/api/health")
+                      .then((res) => res.text())
+                      .then((data) => {
+                        setState(data);
+                      });
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Health Check
+                </Button>
+
+                <div className="mt-4">
+                  {state === "" ? (
+                    <p className="text-red-600 font-medium">System Status: Not Checked</p>
+                  ) : (
+                    <p className="text-green-600 font-medium">System Status: Healthy</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

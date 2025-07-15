@@ -30,8 +30,19 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// JWT Authentication middleware (exclude docs and health routes)
-app.use("/api/*", authenticateToken);
+// JWT Authentication middleware (exclude docs, health, and public registration routes)
+app.use("/api/*", async (c, next) => {
+  // Allow public access to batches and sections for registration
+  if (c.req.path === '/api/v1/batches' && c.req.method === 'GET') {
+    return next();
+  }
+  if (c.req.path.startsWith('/api/v1/sections/') && c.req.method === 'GET') {
+    return next();
+  }
+  
+  // Apply authentication for all other API routes
+  return authenticateToken(c, next);
+});
 
 // Unified API Documentation (single page with all sections)
 app.route("/api/docs", unifiedDocsApp);
