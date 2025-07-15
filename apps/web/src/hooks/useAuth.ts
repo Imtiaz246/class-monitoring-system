@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
+import { apiClient } from '../utils/api';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -76,21 +77,7 @@ export const useLogin = () => {
   
   return useMutation({
     mutationFn: async (data: LoginData): Promise<AuthResponse> => {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const errorResponse = await response.json();
-        const errorMessage = errorResponse.error?.message || errorResponse.message || 'Login failed';
-        throw new Error(errorMessage);
-      }
-      
-      return response.json();
+      return apiClient.post<AuthResponse>('/api/auth/login', data);
     },
     onSuccess: (data) => {
       // Store tokens in localStorage
@@ -113,21 +100,7 @@ export const useRegisterStudent = () => {
   
   return useMutation({
     mutationFn: async (data: RegisterStudentData): Promise<AuthResponse> => {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register/student`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const errorResponse = await response.json();
-        const errorMessage = errorResponse.error?.message || errorResponse.message || 'Registration failed';
-        throw new Error(errorMessage);
-      }
-      
-      return response.json();
+      return apiClient.post<AuthResponse>('/api/auth/register/student', data);
     },
     onSuccess: (data) => {
       toast.success(data.message || 'Registration successful! Please check your email to verify your account.');
@@ -144,13 +117,7 @@ export const useBatches = () => {
   return useQuery({
     queryKey: ['batches'],
     queryFn: async (): Promise<{ data: Batch[] }> => {
-      const response = await fetch(`${API_BASE_URL}/api/v1/batches`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch batches');
-      }
-      
-      return response.json();
+      return apiClient.get<{ data: Batch[] }>('/api/v1/batches');
     },
   });
 };
@@ -163,16 +130,7 @@ export const useSections = (batchId: string | null) => {
         return { data: [] };
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/v1/sections/${batchId}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to fetch sections: ${response.status} ${errorText}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      return apiClient.get<{ data: Section[] }>(`/api/v1/sections/${batchId}`);
     },
     enabled: !!batchId,
   });
@@ -182,6 +140,7 @@ export const useSections = (batchId: string | null) => {
 export const logout = () => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
   toast.success('Logged out successfully');
 };
 
@@ -192,4 +151,16 @@ export const isAuthenticated = (): boolean => {
 export const getStoredUser = (): User | null => {
   const userStr = localStorage.getItem('user');
   return userStr ? JSON.parse(userStr) : null;
+};
+
+// Test function to manually trigger token refresh (for development/testing)
+export const testTokenRefresh = async (): Promise<void> => {
+  try {
+    const response = await apiClient.get('/api/auth/me');
+    console.log('Token refresh test successful:', response);
+    toast.success('Token refresh working correctly!');
+  } catch (error) {
+    console.error('Token refresh test failed:', error);
+    toast.error('Token refresh failed: ' + (error as Error).message);
+  }
 };
