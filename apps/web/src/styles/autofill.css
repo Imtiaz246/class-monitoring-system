@@ -1,0 +1,54 @@
+/* Autofill styling fix - Force background to match input background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-webkit-autofill:valid {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  background-color: white !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: #000000 !important;
+}
+
+/* For dark mode compatibility */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark input:-webkit-autofill:valid {
+  -webkit-box-shadow: 0 0 0 1000px rgb(31, 41, 55) inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-color: rgb(31, 41, 55) !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: #ffffff !important;
+}
+
+/* Additional selectors for better coverage */
+[data-slot="input"]:-webkit-autofill,
+[data-slot="input"]:-webkit-autofill:hover,
+[data-slot="input"]:-webkit-autofill:focus,
+[data-slot="input"]:-webkit-autofill:active,
+[data-slot="input"]:-webkit-autofill:valid {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  background-color: white !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: #000000 !important;
+}
+
+.dark [data-slot="input"]:-webkit-autofill,
+.dark [data-slot="input"]:-webkit-autofill:hover,
+.dark [data-slot="input"]:-webkit-autofill:focus,
+.dark [data-slot="input"]:-webkit-autofill:active,
+.dark [data-slot="input"]:-webkit-autofill:valid {
+  -webkit-box-shadow: 0 0 0 1000px rgb(31, 41, 55) inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-color: rgb(31, 41, 55) !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: #ffffff !important;
+}

@@ -187,11 +187,6 @@ function SignUpComponent() {
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
-                        style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                            caretColor: 'var(--tw-text-opacity, 1)'
-                         }}
                       />
                     </div>
                     {errors.name && (
@@ -223,11 +218,6 @@ function SignUpComponent() {
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
-                        style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                            caretColor: 'var(--tw-text-opacity, 1)'
-                         }}
                       />
                     </div>
                     {errors.email && (
@@ -273,11 +263,6 @@ function SignUpComponent() {
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
-                        style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                            caretColor: 'var(--tw-text-opacity, 1)'
-                         }}
                       />
                     </div>
                     {errors.password && (
@@ -309,11 +294,6 @@ function SignUpComponent() {
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
-                        style={{
-                            WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                            WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                            caretColor: 'var(--tw-text-opacity, 1)'
-                         }}
                       />
                     </div>
                     {errors.confirmPassword && (
@@ -370,11 +350,6 @@ function SignUpComponent() {
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       className="relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500 dark:text-white"
-                      style={{
-                        WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                        WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                        caretColor: 'var(--tw-text-opacity, 1)'
-                      }}
                     />
                   </div>
                 </div>
@@ -393,11 +368,6 @@ function SignUpComponent() {
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     className="relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500 dark:text-white"
-                    style={{
-                        WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                        WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                        caretColor: 'var(--tw-text-opacity, 1)'
-                       }}
                   />
                 </div>
               </div>
@@ -434,11 +404,6 @@ function SignUpComponent() {
                             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                         }`}
-                        style={{
-                           WebkitBoxShadow: 'inset 0 0 0 30px var(--tw-bg-opacity, 1)',
-                           WebkitTextFillColor: 'var(--tw-text-opacity, 1)',
-                           caretColor: 'var(--tw-text-opacity, 1)'
-                         }}
                       />
                     </div>
                     {errors.studentId && (

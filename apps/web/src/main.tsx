@@ -3,6 +3,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import { queryClient, apiClient } from "./utils/api";
+import "./styles/autofill.css";
 
 const router = createRouter({
   routeTree,
