@@ -111,8 +111,8 @@ function SignInComponent() {
                     placeholder="📧 Enter your email address"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 text-gray-900 dark:text-white ${
-                      errors.email 
+                    className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 text-gray-900 dark:text-white ${
+                      errors.email
                         ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                         : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
                     }`}
@@ -142,7 +142,7 @@ function SignInComponent() {
                     placeholder="🔒 Enter your password"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 text-gray-900 dark:text-white ${
+                    className={`relative h-12 rounded-xl border-2 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25 dark:text-white ${
                       errors.password 
                         ? 'border-red-400 focus:border-red-500 focus:ring-red-500/25 shadow-red-200/50' 
                         : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:border-blue-500'
