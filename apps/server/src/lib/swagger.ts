@@ -37,6 +37,10 @@ export const createOpenAPIApp = () => {
         name: 'Section Management',
         description: 'Section creation, retrieval, and management endpoints'
       },
+      {
+        name: 'Rooms',
+        description: 'Room creation, retrieval, update, and deletion endpoints'
+      },
     ],
   });
 

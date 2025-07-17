@@ -54,8 +54,6 @@ export const createRoomSchema = z.object({
   location: z.string().min(1, "Location is required"),
 });
 
-export const getRoomsSchema = paginationSchema;
-
 // Course schemas
 export const createCourseSchema = z.object({
   courseCode: z.string().min(1, "Course code is required"),

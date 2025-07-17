@@ -1,103 +1,100 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db, rooms, users } from "../db";
-import { createRoomSchema, getRoomsSchema } from "../utils/validation";
-import { requireAdmin } from "../middleware/auth";
-import { createError } from "../utils/errors";
+import { createRoomSchema, paginationSchema } from "../utils/validation";
+import { requireAdmin, requireAuth } from "../middleware/auth";
 import type { HonoContext } from "../utils/types";
-import { eq, and, or } from "drizzle-orm";
+import { RoomService } from "../services/room.service";
+import { AppError, createError } from "../utils/errors";
 
 const roomsRouter = new Hono<HonoContext>();
 
-// POST /api/v1/rooms - Create a room
-roomsRouter.post(
-  "/",
-  requireAdmin,
-  zValidator("json", createRoomSchema),
-  async (c) => {
-    const { roomName, location } = c.req.valid("json");
-    const user = c.get("user")!;
+// Create a room
+roomsRouter.post('/', requireAdmin, zValidator('json', createRoomSchema), async (c) => {
+  const roomData = c.req.valid('json');
+  const user = c.get('user')!;
 
-    try {
-      // Check if room with same name and location already exists
-      const existingRoom = await db
-        .select()
-        .from(rooms)
-        .where(and(
-          eq(rooms.roomName, roomName),
-          eq(rooms.location, location)
-        ))
-        .limit(1);
-
-      if (existingRoom.length > 0) {
-        throw createError.conflict("Room with same name and location already exists");
-      }
-
-      const [newRoom] = await db
-        .insert(rooms)
-        .values({
-          roomName,
-          location,
-          updatedBy: user.id,
-        })
-        .returning();
-
-      return c.json({
-        data: {
-          roomId: newRoom.roomId,
-          roomName: newRoom.roomName,
-          location: newRoom.location,
-          updatedAt: newRoom.updatedAt,
-          updatedBy: {
-            name: user.name,
-            userId: user.id,
-            role: user.role,
-          },
-        },
-      }, 201);
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("duplicate")) {
-        throw createError.conflict("Room with same name and location already exists");
-      }
+  try {
+    const room = await RoomService.createRoom(roomData, user.id);
+    return c.json({
+      message: 'Room created successfully',
+      data: room,
+    }, 201);
+  } catch (error) {
+    if (error instanceof AppError) {
       throw error;
     }
+    console.error('Error creating room:', error);
+    throw createError.internalServer('Failed to create room');
   }
-);
+});
 
-// GET /api/v1/rooms - List rooms
-roomsRouter.get(
-  "/",
-  zValidator("query", getRoomsSchema),
-  async (c) => {
-    const { page, limit } = c.req.valid("query");
-    const offset = (page - 1) * limit;
+// Get all rooms with pagination
+roomsRouter.get('/', requireAuth, zValidator('query', paginationSchema), async (c) => {
+  const query = c.req.valid('query');
 
-    try {
-      const roomsWithUpdater = await db
-        .select({
-          roomId: rooms.roomId,
-          roomName: rooms.roomName,
-          location: rooms.location,
-          updatedAt: rooms.updatedAt,
-          updatedBy: {
-            name: users.name,
-            userId: users.id,
-            role: users.role,
-          },
-        })
-        .from(rooms)
-        .leftJoin(users, eq(rooms.updatedBy, users.id))
-        .limit(limit)
-        .offset(offset)
-        .orderBy(rooms.updatedAt);
-
-      return c.json({
-        data: roomsWithUpdater,
-      });
-    } catch (error) {
-      throw createError.internalServer("Failed to fetch rooms");
+  try {
+    const result = await RoomService.getRooms(query);
+    return c.json({result});
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
     }
+    console.error('Error fetching rooms:', error);
+    throw createError.internalServer('Failed to fetch rooms');
   }
-);
+});
+
+// Get a single room by ID
+roomsRouter.get('/:id', requireAuth, async (c) => {
+  const roomId = c.req.param('id');
+
+  try {
+    const room = await RoomService.getRoomById(roomId);
+    return c.json(room);
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Error fetching room:', error);
+    throw createError.internalServer('Failed to fetch room');
+  }
+});
+
+// Update a room
+roomsRouter.put('/:id', requireAdmin, zValidator('json', createRoomSchema), async (c) => {
+  const roomId = c.req.param('id');
+  const roomData = c.req.valid('json');
+  const user = c.get('user')!;
+
+  try {
+    const room = await RoomService.updateRoom(roomId, roomData, user.id);
+    return c.json({
+      message: 'Room updated successfully',
+      data: room,
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Error update room:', error);
+    throw createError.internalServer('Failed to update room');
+  }
+});
+
+// Delete a room
+roomsRouter.delete('/:id', requireAdmin, async (c) => {
+  const roomId = c.req.param('id');
+
+  try {
+    const result = await RoomService.deleteRoom(roomId);
+    return c.json(result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Error delete room:', error);
+    throw createError.internalServer('Failed to delete room');
+  }
+});
 
 export { roomsRouter };

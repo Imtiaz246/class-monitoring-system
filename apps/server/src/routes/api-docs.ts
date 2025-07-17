@@ -3,6 +3,7 @@ import { authRouter } from './auth-openapi';
 import { usersRouter } from './users-openapi';
 import { batchesRouter } from './batches-openapi';
 import { sectionsRouter } from './sections-openapi';
+import { roomsRouter } from './rooms-openapi';
 
 // Create unified API documentation
 const apiDocsRouter = createOpenAPIApp();
@@ -12,6 +13,7 @@ apiDocsRouter.route('/auth', authRouter);
 apiDocsRouter.route('/users', usersRouter);
 apiDocsRouter.route('/batches', batchesRouter);
 apiDocsRouter.route('/sections', sectionsRouter);
+apiDocsRouter.route('/rooms', roomsRouter);
 
 // Add a custom route to list all available documentation sections
 apiDocsRouter.get('/sections', (c) => {
@@ -45,6 +47,13 @@ apiDocsRouter.get('/sections', (c) => {
         path: '/sections',
         swaggerUI: '/sections/ui',
         openAPISpec: '/sections/doc'
+      },
+      {
+        name: 'Room Management',
+        description: 'Room creation, retrieval, update, and deletion endpoints',
+        path: '/rooms',
+        swaggerUI: '/rooms/ui',
+        openAPISpec: '/rooms/doc'
       }
     ],
     note: 'Visit the individual Swagger UI endpoints to explore the APIs'
