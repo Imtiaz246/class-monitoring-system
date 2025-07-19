@@ -4,10 +4,10 @@ import {
   SuccessResponseSchema,
   ErrorResponseSchema,
   commonErrorResponses
-} from '../lib/swagger';
-import { createRoomSchema, paginationSchema, uuidParamSchema } from '../utils/validation';
-import { requireAuth, requireAdmin } from '../middleware/auth';
-import { RoomService } from '../services/room.service';
+} from '../../lib/swagger';
+import { createRoomSchema, paginationSchema, uuidParamSchema } from '../../utils/validation';
+import { requireAuth, requireAdmin } from '../../middleware/auth';
+import { RoomService } from '../../services/room.service';
 
 // Create OpenAPI app instance
 const roomsRouter = createOpenAPIApp();

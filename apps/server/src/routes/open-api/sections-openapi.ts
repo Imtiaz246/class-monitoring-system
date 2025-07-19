@@ -5,11 +5,11 @@ import {
   SectionsListResponseSchema,
   ErrorResponseSchema,
   commonErrorResponses
-} from '../lib/swagger';
-import { createSectionSchema, uuidParamSchema } from '../utils/validation';
-import { requireAdmin } from '../middleware/jwt-auth';
-import { createError, AppError } from '../utils/errors';
-import { SectionService } from '../services/section.service';
+} from '../../lib/swagger';
+import { createSectionSchema, uuidParamSchema } from '../../utils/validation';
+import { requireAdmin } from '../../middleware/jwt-auth';
+import { createError, AppError } from '../../utils/errors';
+import { SectionService } from '../../services/section.service';
 
 // Create OpenAPI app instance
 const sectionsRouter = createOpenAPIApp();

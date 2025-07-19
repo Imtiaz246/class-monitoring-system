@@ -3,18 +3,17 @@ import {
   createOpenAPIApp, 
   SuccessResponseSchema,
   ErrorResponseSchema
-} from '../lib/swagger';
+} from '../../lib/swagger';
 import { 
   requireAdmin
-} from '../middleware/jwt-auth';
-import { uuidParamSchema, createBatchSchema, updateBatchSchema, getBatchesSchema } from '../utils/validation';
-import { createError, AppError } from '../utils/errors';
-import { BatchService } from '../services/batch.service';
-import { 
-  BatchResponseSchema,
+} from '../../middleware/jwt-auth';
+import { uuidParamSchema, createBatchSchema, updateBatchSchema, getBatchesSchema } from '../../utils/validation';
+import { createError, AppError } from '../../utils/errors';
+import { BatchService } from '../../services/batch.service';
+import {
   BatchListResponseSchema,
   BatchCreateResponseSchema
-} from '../types/batch.types';
+} from '../../types/batch.types';
 
 // Create OpenAPI app instance
 const batchesRouter = createOpenAPIApp();

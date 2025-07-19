@@ -3,7 +3,7 @@ import {
   createOpenAPIApp, 
   SuccessResponseSchema,
   ErrorResponseSchema
-} from '../lib/swagger';
+} from '../../lib/swagger';
 import {
   UserResponseSchema,
   TeacherResponseSchema,
@@ -13,17 +13,17 @@ import {
   UpdateUserSchema,
   UpdateTeacherSchema,
   UpdateStudentSchema
-} from '../types/user.types';
+} from '../../types/user.types';
 import { 
   requireSuperAdmin,
   requireAdmin,
   requireSelf,
   requireTeacherOrAdmin,
   requireAuth
-} from '../middleware/jwt-auth';
-import { uuidParamSchema, genderSchema, roleSchema } from '../utils/validation';
-import { createError, AppError } from '../utils/errors';
-import { UserService } from '../services/user.service';
+} from '../../middleware/jwt-auth';
+import { roleSchema, uuidParamSchema } from '../../utils/validation';
+import { createError } from '../../utils/errors';
+import { UserService } from '../../services/user.service';
 
 // Create OpenAPI app instance
 const usersRouter = createOpenAPIApp();
@@ -777,7 +777,7 @@ usersRouter.openapi(updateAdminOrChairmanRoute, async (c) => {
   updatedData.updatedAt = new Date();
   
   // Import db and users here for this specific operation
-  const { db, users } = await import('../db');
+  const { db, users } = await import('../../db');
   const { eq } = await import('drizzle-orm');
   
   await db.update(users).set(updatedData).where(eq(users.id, id));

@@ -1,10 +1,10 @@
 import { createOpenAPIApp } from '../lib/swagger';
-import { authRouter } from './auth-openapi';
-import { usersRouter } from './users-openapi';
-import { batchesRouter } from './batches-openapi';
-import { sectionsRouter } from './sections-openapi';
-import { roomsRouter } from './rooms-openapi';
-import { coursesRouter } from './courses-openapi';
+import { authRouter } from '../routes/open-api/auth-openapi';
+import { usersRouter } from '../routes/open-api/users-openapi';
+import { batchesRouter } from '../routes/open-api/batches-openapi';
+import { sectionsRouter } from '../routes/open-api/sections-openapi';
+import { roomsRouter } from '../routes/open-api/rooms-openapi';
+import { coursesRouter } from '../routes/open-api/courses-openapi';
 
 // Create unified API documentation
 const apiDocsRouter = createOpenAPIApp();

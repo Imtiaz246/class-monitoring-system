@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../utils/validation";
 import { createSectionSchema, uuidParamSchema } from "../utils/validation";
 import { requireAdmin } from "../middleware/auth";
 import { AppError, createError } from "../utils/errors";

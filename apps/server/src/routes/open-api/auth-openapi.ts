@@ -7,15 +7,15 @@ import {
   requestPasswordChangeOtpSchema, 
   verifyPasswordChangeOtpSchema, 
   changePasswordWithTokenSchema
-} from '../utils/validation';
-import { createError, AppError } from '../utils/errors';
-import { AuthService } from '../services/auth.service';
+} from '../../utils/validation';
+import { createError, AppError } from '../../utils/errors';
+import { AuthService } from '../../services/auth.service';
 import { 
   createOpenAPIApp, 
   SuccessResponseSchema, 
   // commonErrorResponses 
-} from '../lib/swagger';
-import { requireAuth } from '../middleware/jwt-auth';
+} from '../../lib/swagger';
+import { requireAuth } from '../../middleware/jwt-auth';
 
 // Create OpenAPI app instance
 const authRouter = createOpenAPIApp();

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../utils/validation";
 import { db, routines, sections, courses, rooms, teacherProfiles, users, courseTeacher, classSessions, bookedRooms, bookedTeachers } from "../db";
 import { createRoutineSchema, getRoutinesSchema, updateRoutineSchema, uuidParamSchema } from "../utils/validation";
 import { requireAdmin, requireTeacherOrAdmin } from "../middleware/auth";

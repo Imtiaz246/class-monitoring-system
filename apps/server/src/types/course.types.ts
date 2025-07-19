@@ -3,7 +3,7 @@ import { paginationSchema } from './common.types';
 
 // Course query schemas
 export const getCoursesSchema = paginationSchema.extend({
-  semester: z.number().int().positive().optional().openapi({
+  semester: z.coerce.number().int().positive().optional().openapi({
     example: 1,
     description: 'Filter courses by semester'
   }),

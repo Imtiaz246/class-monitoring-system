@@ -2,9 +2,9 @@ import { createRoute, z } from '@hono/zod-openapi';
 import {
   createOpenAPIApp,
   commonErrorResponses,
-} from '../lib/swagger';
-import { CourseService } from '../services/course.service';
-import { requireAdmin, requireAuth, requireTeacherOrAdmin } from '../middleware/auth';
+} from '../../lib/swagger';
+import { CourseService } from '../../services/course.service';
+import { requireAdmin, requireAuth, requireTeacherOrAdmin } from '../../middleware/auth';
 import {
   createCourseSchema,
   updateCourseSchema,
@@ -14,8 +14,8 @@ import {
   CourseListResponseSchema,
   CourseErrorResponseSchema,
   AddTeachersToCourseResponseSchema,
-} from '../types/course.types';
-import { AppError, createError } from '../utils/errors';
+} from '../../types/course.types';
+import { AppError, createError } from '../../utils/errors';
 
 // Create OpenAPI app instance
 const coursesRouter = createOpenAPIApp();

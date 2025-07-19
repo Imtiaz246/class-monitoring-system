@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../utils/validation";
 import { createRoomSchema, paginationSchema } from "../utils/validation";
 import { requireAdmin, requireAuth } from "../middleware/auth";
 import type { HonoContext } from "../utils/types";
