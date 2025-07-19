@@ -4,6 +4,7 @@ import { usersRouter } from './users-openapi';
 import { batchesRouter } from './batches-openapi';
 import { sectionsRouter } from './sections-openapi';
 import { roomsRouter } from './rooms-openapi';
+import { coursesRouter } from './courses-openapi';
 
 // Create unified API documentation
 const apiDocsRouter = createOpenAPIApp();
@@ -14,6 +15,7 @@ apiDocsRouter.route('/users', usersRouter);
 apiDocsRouter.route('/batches', batchesRouter);
 apiDocsRouter.route('/sections', sectionsRouter);
 apiDocsRouter.route('/rooms', roomsRouter);
+apiDocsRouter.route('/courses', coursesRouter);
 
 // Add a custom route to list all available documentation sections
 apiDocsRouter.get('/sections', (c) => {
@@ -54,6 +56,13 @@ apiDocsRouter.get('/sections', (c) => {
         path: '/rooms',
         swaggerUI: '/rooms/ui',
         openAPISpec: '/rooms/doc'
+      },
+      {
+        name: 'Course Management',
+        description: 'Course creation, retrieval, update, deletion, and teacher assignment endpoints',
+        path: '/courses',
+        swaggerUI: '/courses/ui',
+        openAPISpec: '/courses/doc'
       }
     ],
     note: 'Visit the individual Swagger UI endpoints to explore the APIs'

@@ -41,6 +41,10 @@ export const createOpenAPIApp = () => {
         name: 'Rooms',
         description: 'Room creation, retrieval, update, and deletion endpoints'
       },
+      {
+        name: 'Courses',
+        description: 'Course creation, retrieval, update, deletion, and teacher assignment endpoints'
+      },
     ],
   });
 

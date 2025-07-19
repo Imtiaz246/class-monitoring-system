@@ -55,17 +55,8 @@ export const createRoomSchema = z.object({
 });
 
 // Course schemas
-export const createCourseSchema = z.object({
-  courseCode: z.string().min(1, "Course code is required"),
-  courseName: z.string().min(1, "Course name is required"),
-  creditHours: z.number().positive("Credit hours must be greater than 0"),
-  semester: z.number().int().positive("Semester must be greater than 0"),
-});
-
-export const addTeachersToCourseSchema = z.object({
-  courseCode: z.string().min(1, "Course code is required"),
-  teacherIds: z.array(uuidSchema).min(1, "At least one teacher ID is required"),
-});
+// Re-export course schemas from their respective types file
+export { createCourseSchema, updateCourseSchema, getCoursesSchema, addTeachersToCourseSchema } from '../types/course.types';
 
 // Re-export section schemas from their respective types file
 export { createSectionSchema } from '../types/section.types';
