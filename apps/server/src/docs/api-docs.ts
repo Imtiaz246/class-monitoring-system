@@ -5,6 +5,7 @@ import { batchesRouter } from '../routes/open-api/batches-openapi';
 import { sectionsRouter } from '../routes/open-api/sections-openapi';
 import { roomsRouter } from '../routes/open-api/rooms-openapi';
 import { coursesRouter } from '../routes/open-api/courses-openapi';
+import { routinesRouter } from '../routes/open-api/routines-openapi';
 
 // Create unified API documentation
 const apiDocsRouter = createOpenAPIApp();
@@ -16,6 +17,7 @@ apiDocsRouter.route('/batches', batchesRouter);
 apiDocsRouter.route('/sections', sectionsRouter);
 apiDocsRouter.route('/rooms', roomsRouter);
 apiDocsRouter.route('/courses', coursesRouter);
+apiDocsRouter.route('/routines', routinesRouter);
 
 // Add a custom route to list all available documentation sections
 apiDocsRouter.get('/sections', (c) => {
@@ -63,6 +65,13 @@ apiDocsRouter.get('/sections', (c) => {
         path: '/courses',
         swaggerUI: '/courses/ui',
         openAPISpec: '/courses/doc'
+      },
+      {
+        name: 'Routine Management',
+        description: 'Routine creation, retrieval, update, and deletion endpoints for class schedules',
+        path: '/routines',
+        swaggerUI: '/routines/ui',
+        openAPISpec: '/routines/doc'
       }
     ],
     note: 'Visit the individual Swagger UI endpoints to explore the APIs'

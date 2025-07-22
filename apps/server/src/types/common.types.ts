@@ -30,4 +30,7 @@ export const dayOfWeekSchema = z.enum([
   message: 'Invalid day of week',
 });
 
+// Type alias for day of week
+export type DayOfWeekType = z.infer<typeof dayOfWeekSchema>;
+
 export const sessionStatusSchema = z.enum(['delivered', 'rescheduled', 'cancelled']);

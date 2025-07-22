@@ -1,7 +1,7 @@
 import { db, rooms, users } from '../db';
 import { createError } from '../utils/errors';
 import { eq, and, sql, count, desc } from 'drizzle-orm';
-import type { CreateRoomData, GetRoomsQuery, RoomResponse, PaginatedRoomsResponse } from '../types/room.types.ts';
+import type { CreateRoomData, GetRoomsQuery, RoomResponse, PaginatedRoomsResponse } from '../types/room.types';
 
 export class RoomService {
   /**
