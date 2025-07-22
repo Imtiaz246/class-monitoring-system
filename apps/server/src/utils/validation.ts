@@ -91,15 +91,6 @@ export const createRoutineSchema = z.object({
   dayOfWeek: dayOfWeekSchema,
   startTime: timeSchema,
   endTime: timeSchema,
-}).refine((data) => {
-  const start = data.startTime.split(':').map(Number);
-  const end = data.endTime.split(':').map(Number);
-  const startMinutes = start[0] * 60 + start[1];
-  const endMinutes = end[0] * 60 + end[1];
-  return startMinutes < endMinutes;
-}, {
-  message: "Start time must be before end time",
-  path: ["endTime"],
 });
 
 export const updateRoutineSchema = z.object({
@@ -111,17 +102,9 @@ export const updateRoutineSchema = z.object({
   startTime: timeSchema.optional(),
   endTime: timeSchema.optional(),
 }).refine((data) => {
-  if (data.startTime && data.endTime) {
-    const start = data.startTime.split(':').map(Number);
-    const end = data.endTime.split(':').map(Number);
-    const startMinutes = start[0] * 60 + start[1];
-    const endMinutes = end[0] * 60 + end[1];
-    return startMinutes < endMinutes;
-  }
-  return true;
+  return (data.startTime && data.endTime) || (!data.startTime && !data.endTime);
 }, {
-  message: "Start time must be before end time",
-  path: ["endTime"],
+  message: "You must provide either startTime and endTime or neither",
 });
 
 export const getRoutinesSchema = paginationSchema.extend({
@@ -130,7 +113,7 @@ export const getRoutinesSchema = paginationSchema.extend({
   courseCode: z.string().optional(),
   sectionId: uuidSchema.optional(),
   teacherId: uuidSchema.optional(),
-  weekDay: dayOfWeekSchema.optional(),
+  dayOfWeek: dayOfWeekSchema.optional(),
 });
 
 // Session schemas

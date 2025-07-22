@@ -26,6 +26,8 @@ export const timeSchema = z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
 
 export const dayOfWeekSchema = z.enum([
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
-]);
+], {
+  message: 'Invalid day of week',
+});
 
 export const sessionStatusSchema = z.enum(['delivered', 'rescheduled', 'cancelled']);
